@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model evidences {
+  id             String        @id(map: "pk_evidences") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tag_id         String?       @unique @db.Uuid
+  report_id      String?       @db.Uuid
+  safekeeping_id String?       @db.Uuid
+  registered_by  String        @db.Uuid
+  name           String
+  description    String
+  status         String
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime      @default(now()) @db.Timestamptz(6)
+  safekeepings   safekeepings? @relation(fields: [safekeeping_id], references: [id], map: "fk_evidence_safekeeping")
+  tags           tags?         @relation(fields: [tag_id], references: [id], map: "fk_evidence_tag")
+  users          users         @relation(fields: [registered_by], references: [id], onDelete: NoAction, map: "fk_evidence_user")
+}
+
+model refresh_tokens {
+  id            String   @id(map: "pk_refresh_tokens") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  refresh_token String   @unique
+  created_at    DateTime @db.Timestamp(6)
+  expires_at    DateTime @db.Timestamp(6)
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_token_user")
+}
+
+model safekeepings {
+  id                 String               @id(map: "pk_safekeepings") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String               @unique
+  manager_id         String?              @db.Uuid
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  evidences          evidences[]
+  users              users?               @relation(fields: [manager_id], references: [id], map: "fk_manager_id")
+  scanners           scanners[]
+  users_safekeepings users_safekeepings[]
+}
+
+model scanners {
+  id             String        @id(map: "pk_scanners") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  safekeeping_id String?       @db.Uuid
+  mac_address    String        @unique
+  name           String        @unique
+  last_scan      DateTime?     @db.Timestamptz(6)
+  status         String
+  safekeepings   safekeepings? @relation(fields: [safekeeping_id], references: [id], map: "fk_scanner_safekeeping")
+  scans          scans[]
+}
+
+model scans {
+  id         String    @id(map: "pk_scans") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scanner_id String?   @db.Uuid
+  tag_id     String    @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  scanners   scanners? @relation(fields: [scanner_id], references: [id], onDelete: Cascade, map: "fk_scan_scanner")
+  tags       tags      @relation(fields: [tag_id], references: [id], onDelete: Cascade, map: "fk_scan_tag")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model tags {
+  id        String     @id(map: "pk_tags") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tag_id    String     @unique(map: "uq_tag_id")
+  tag_type  String
+  evidences evidences?
+  scans     scans[]
+  users     users?
+}
+
+model users {
+  id                 String               @id(map: "pk_users") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tag_id             String?              @unique @db.Uuid
+  name               String
+  email              String               @unique
+  cpf                String               @unique
+  setor              String
+  admin              Boolean?             @default(false)
+  status             String               @default("ativo")
+  senha              String
+  evidences          evidences[]
+  refresh_tokens     refresh_tokens[]
+  safekeepings       safekeepings[]
+  tags               tags?                @relation(fields: [tag_id], references: [id], map: "fk_users_tags")
+  users_safekeepings users_safekeepings[]
+}
+
+model users_safekeepings {
+  user_id        String       @db.Uuid
+  safekeeping_id String       @db.Uuid
+  safekeepings   safekeepings @relation(fields: [safekeeping_id], references: [id], onDelete: Cascade, map: "fk_user_safe_safekeeping")
+  users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_safe_user")
+
+  @@id([user_id, safekeeping_id], map: "pk_user_safekeeping")
+}
