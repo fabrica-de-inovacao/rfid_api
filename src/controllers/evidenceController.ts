@@ -82,18 +82,24 @@ export class EvidenceController {
     try {
       const { evidence_id } = req.body;
 
-      // Verificar se a prova existe
+      // 1. Verificar se a prova existe (Isto já está correto)
       await this.evidenceService.getEvidenceById(evidence_id);
 
-      // Enviar comando MQTT para iniciar leitura de tag
-      // Como não temos o ID específico do scanner, vamos usar um tópico genérico
-      await this.mqttService.publishMessage("rfid/tag/link/request", {
-        evidence_id,
+      // --- CORREÇÃO APLICADA AQUI ---
+      // 2. Construir o tópico dinâmico que o Raspberry Pi está à espera
+      const topic = `custody/link/request/${evidence_id}`;
+
+      // 3. O payload pode ser mais simples, pois o ID já está no tópico
+      const payload = {
         action: "start_tag_read",
         timestamp: new Date().toISOString(),
-      });
+      };
 
-      // Notificar via WebSocket que o processo foi iniciado
+      // 4. Publicar a mensagem no TÓPICO CORRETO
+      await this.mqttService.publishMessage(topic, payload);
+      // -------------------------------
+
+      // Notificar via WebSocket que o processo foi iniciado (Isto já está correto)
       this.websocketService.broadcast({
         type: "tag_linked",
         data: {
