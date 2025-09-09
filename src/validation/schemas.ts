@@ -51,6 +51,23 @@ export const createEvidenceSchema = z.object({
   safekeeping_id: z.string().uuid("ID da custódia deve ser um UUID válido"),
 });
 
+// Esquemas de Safekeepings (Custódias)
+export const createSafekeepingSchema = z.object({
+  name: z.string().min(1, "Nome da custódia é obrigatório"),
+  manager_id: z
+    .string()
+    .uuid("ID do gestor deve ser um UUID válido")
+    .optional(),
+});
+
+export const updateSafekeepingSchema = z.object({
+  name: z.string().min(1, "Nome da custódia é obrigatório").optional(),
+  manager_id: z
+    .string()
+    .uuid("ID do gestor deve ser um UUID válido")
+    .optional(),
+});
+
 // Esquemas de Tags
 export const linkTagToEvidenceSchema = z.object({
   evidence_id: z.string().uuid("ID da prova deve ser um UUID válido"),
@@ -94,6 +111,8 @@ export type LoginData = z.infer<typeof loginSchema>;
 export type CreateUserData = z.infer<typeof createUserSchema>;
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
 export type CreateEvidenceData = z.infer<typeof createEvidenceSchema>;
+export type CreateSafekeepingData = z.infer<typeof createSafekeepingSchema>;
+export type UpdateSafekeepingData = z.infer<typeof updateSafekeepingSchema>;
 export type LinkTagToEvidenceData = z.infer<typeof linkTagToEvidenceSchema>;
 export type TagReadData = z.infer<typeof tagReadSchema>;
 export type ScannerReportData = z.infer<typeof scannerReportSchema>;

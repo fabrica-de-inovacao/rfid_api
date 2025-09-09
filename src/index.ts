@@ -11,6 +11,7 @@ import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import evidenceRoutes, { setEvidenceController } from "./routes/evidenceRoutes";
 import scannerRoutes, { setScannerController } from "./routes/scannerRoutes";
+import safekeepingRoutes from "./routes/safekeepingRoutes";
 
 // Services
 import { MQTTService } from "./services/mqttService";
@@ -100,6 +101,7 @@ class App {
     this.app.use("/api/v1/evidences", evidenceRoutes);
     this.app.use("/api/v1/tags", evidenceRoutes); // Tags estão nas rotas de evidências
     this.app.use("/api/v1/scans", scannerRoutes);
+    this.app.use("/api/v1/safekeepings", safekeepingRoutes);
 
     // Rota 404
     this.app.use("*", (req, res) => {

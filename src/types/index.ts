@@ -49,6 +49,16 @@ export interface CreateEvidenceData {
   safekeeping_id: string;
 }
 
+export interface CreateSafekeepingData {
+  name: string;
+  manager_id?: string;
+}
+
+export interface UpdateSafekeepingData {
+  name?: string;
+  manager_id?: string;
+}
+
 export interface TagReadData {
   tag_id: string;
   read_time: string;
