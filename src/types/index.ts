@@ -83,6 +83,7 @@ export interface WebSocketMessage {
     | "tag_linked"
     | "scanner_status"
     | "evidence_scan"
+    | "tag_read_response"
     | "error"
     | "connection_established";
   data: any;

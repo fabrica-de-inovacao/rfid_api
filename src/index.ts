@@ -38,8 +38,8 @@ class App {
 
   private initializeServices(): void {
     // Inicializar serviços
-    this.mqttService = new MQTTService();
     this.websocketService = new WebSocketService();
+    this.mqttService = new MQTTService(this.websocketService);
 
     console.log("Serviços MQTT e WebSocket inicializados");
   }
