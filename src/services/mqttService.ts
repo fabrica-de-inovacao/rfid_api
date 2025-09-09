@@ -451,12 +451,12 @@ export class MQTTService {
         if (!tag) {
           console.log("💾 Creating new tag with data:", {
             tag_id: tag_id,
-            tag_type: "evidence",
+            tag_type: "item",
           });
           tag = await this.prisma.tags.create({
             data: {
               tag_id: tag_id,
-              tag_type: "evidence",
+              tag_type: "item",
             },
           });
           console.log("✅ New tag created:", JSON.stringify(tag, null, 2));
