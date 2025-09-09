@@ -173,8 +173,8 @@ export class MQTTService {
       console.log("- Keys:", Object.keys(data));
       console.log("- Values:", Object.values(data));
 
-      // Log each expected field
-      console.log("Expected fields extraction:");
+      // Log actual fields (check for both formats)
+      console.log("Actual fields extraction:");
       console.log(
         "- scanner_id:",
         data.scanner_id,
@@ -183,6 +183,13 @@ export class MQTTService {
         ")"
       );
       console.log("- tag_id:", data.tag_id, "(type:", typeof data.tag_id, ")");
+      console.log(
+        "- tag_uid:",
+        data.tag_uid,
+        "(type:",
+        typeof data.tag_uid,
+        ")"
+      );
       console.log(
         "- evidence_id:",
         data.evidence_id,
@@ -205,13 +212,25 @@ export class MQTTService {
         ")"
       );
 
-      const { scanner_id, tag_id, evidence_id, success, error_message } = data;
+      // Adaptar para diferentes formatos de dados
+      const scanner_id = data.scanner_id;
+      const tag_id = data.tag_id || data.tag_uid; // Usar tag_uid se tag_id não existir
+      const tag_uid = data.tag_uid;
+      const evidence_id = data.evidence_id;
+      const success =
+        data.success !== undefined
+          ? data.success
+          : evidence_id && tag_id
+          ? true
+          : false;
+      const error_message = data.error_message;
 
-      console.log("Destructured values:");
+      console.log("Adapted values:");
       console.log("- scanner_id:", scanner_id);
-      console.log("- tag_id:", tag_id);
+      console.log("- tag_id (adapted):", tag_id);
+      console.log("- tag_uid:", tag_uid);
       console.log("- evidence_id:", evidence_id);
-      console.log("- success:", success);
+      console.log("- success (inferred):", success);
       console.log("- error_message:", error_message);
 
       if (success && tag_id) {
@@ -351,8 +370,25 @@ export class MQTTService {
       console.log("- Type:", typeof data);
       console.log("- Keys:", Object.keys(data));
 
-      // Log each expected field
-      console.log("Expected fields extraction:");
+      // Log actual fields received
+      console.log("Actual fields received:");
+      console.log(
+        "- evidence_id:",
+        data.evidence_id,
+        "(type:",
+        typeof data.evidence_id,
+        ")"
+      );
+      console.log(
+        "- tag_uid:",
+        data.tag_uid,
+        "(type:",
+        typeof data.tag_uid,
+        ")"
+      );
+
+      // Also check for alternative field names
+      console.log("Alternative field checks:");
       console.log(
         "- scanner_id:",
         data.scanner_id,
@@ -361,13 +397,6 @@ export class MQTTService {
         ")"
       );
       console.log("- tag_id:", data.tag_id, "(type:", typeof data.tag_id, ")");
-      console.log(
-        "- evidence_id:",
-        data.evidence_id,
-        "(type:",
-        typeof data.evidence_id,
-        ")"
-      );
       console.log(
         "- success:",
         data.success,
@@ -383,16 +412,28 @@ export class MQTTService {
         ")"
       );
 
-      const { scanner_id, tag_id, evidence_id, success, error_message } = data;
+      // Adaptar para a estrutura real recebida
+      const evidence_id = data.evidence_id;
+      const tag_uid = data.tag_uid; // Campo real recebido
+      const tag_id = data.tag_id || data.tag_uid; // Usar tag_uid se tag_id não existir
+      const scanner_id = data.scanner_id; // Pode não vir na resposta
+      const success =
+        data.success !== undefined
+          ? data.success
+          : evidence_id && tag_uid
+          ? true
+          : false; // Inferir sucesso
+      const error_message = data.error_message;
 
-      console.log("Destructured values:");
-      console.log("- scanner_id:", scanner_id);
-      console.log("- tag_id:", tag_id);
+      console.log("Adapted values:");
       console.log("- evidence_id:", evidence_id);
-      console.log("- success:", success);
+      console.log("- tag_uid:", tag_uid);
+      console.log("- tag_id (adapted):", tag_id);
+      console.log("- scanner_id:", scanner_id);
+      console.log("- success (inferred):", success);
       console.log("- error_message:", error_message);
 
-      if (success) {
+      if (success && tag_id) {
         console.log("✅ Success condition met, proceeding with tag linking...");
 
         // Verificar se a tag já existe no sistema
@@ -438,24 +479,30 @@ export class MQTTService {
           JSON.stringify(updatedEvidence, null, 2)
         );
 
-        // Registrar o scan de vinculação
-        console.log("💾 Creating scan record for linking:", {
-          scanner_id,
-          tag_id: tag.id,
-        });
-        const scanRecord = await this.prisma.scans.create({
-          data: {
-            scanner_id: scanner_id,
+        // Registrar o scan de vinculação (apenas se tiver scanner_id)
+        if (scanner_id) {
+          console.log("💾 Creating scan record for linking:", {
+            scanner_id,
             tag_id: tag.id,
-          },
-        });
-        console.log(
-          "✅ Scan record created:",
-          JSON.stringify(scanRecord, null, 2)
-        );
+          });
+          const scanRecord = await this.prisma.scans.create({
+            data: {
+              scanner_id: scanner_id,
+              tag_id: tag.id,
+            },
+          });
+          console.log(
+            "✅ Scan record created:",
+            JSON.stringify(scanRecord, null, 2)
+          );
+        } else {
+          console.log(
+            "⚠️ Skipping scan record creation - no scanner_id provided"
+          );
+        }
 
         console.log(
-          `Tag ${tag_id} vinculada à prova ${evidence_id} com sucesso`
+          `Tag ${tag_id} (UID: ${tag_uid}) vinculada à prova ${evidence_id} com sucesso`
         );
 
         // Notificar via WebSocket sobre a vinculação bem-sucedida
@@ -468,6 +515,7 @@ export class MQTTService {
             data: {
               success: true,
               tag_id,
+              tag_uid,
               evidence_id,
               scanner_id,
               timestamp: new Date(),
@@ -476,8 +524,14 @@ export class MQTTService {
           });
         }
       } else {
-        console.log("❌ Failed condition - success is false");
-        console.error(`Erro na vinculação da tag: ${error_message}`);
+        console.log("❌ Failed condition - missing required data");
+        console.log("- evidence_id:", evidence_id);
+        console.log("- tag_uid:", tag_uid);
+        console.log("- inferred success:", success);
+
+        const errorMsg =
+          error_message || "Dados insuficientes para vinculação da tag";
+        console.error(`Erro na vinculação da tag: ${errorMsg}`);
 
         // Notificar via WebSocket sobre o erro
         if (this.websocketService) {
@@ -487,8 +541,9 @@ export class MQTTService {
           this.websocketService.broadcast({
             type: "error",
             data: {
-              message: `Erro na vinculação da tag: ${error_message}`,
+              message: `Erro na vinculação da tag: ${errorMsg}`,
               tag_id,
+              tag_uid,
               evidence_id,
               scanner_id,
               timestamp: new Date(),
