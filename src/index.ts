@@ -88,33 +88,21 @@ class App {
       })
     );
 
-    // CORS configurado para produção HTTPS e desenvolvimento HTTP
-    const allowedOrigins = [];
-
-    if (process.env.NODE_ENV === "production") {
-      // Em produção, aceitar tanto HTTP quanto HTTPS do domínio
-      if (process.env.FRONTEND_URL) {
-        allowedOrigins.push(process.env.FRONTEND_URL);
-      }
-      // Adicionar o próprio servidor para requisições internas
-      allowedOrigins.push(
-        `https://${process.env.SERVER_HOST || "189.90.44.226"}:9000`
-      );
-      allowedOrigins.push(
-        `http://${process.env.SERVER_HOST || "189.90.44.226"}:9000`
-      );
-    } else {
-      // Desenvolvimento
-      allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
-    }
-
+    // CORS configurado para aceitar qualquer origem durante testes
+    // TODO: Restringir origins em produção final
     this.app.use(
       cors({
-        origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+        origin: true, // Aceita qualquer origem
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+        allowedHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Requested-With",
+          "X-Forwarded-Proto",
+        ],
         exposedHeaders: ["X-Total-Count", "X-Page-Count"],
+        optionsSuccessStatus: 200, // Para compatibilidade com navegadores mais antigos
       })
     );
 

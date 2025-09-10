@@ -622,15 +622,15 @@ export const setupSwagger = (app: Application): void => {
       res.setHeader("X-Frame-Options", "SAMEORIGIN");
       res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
 
-      // Headers CORS para Swagger UI
+      // Headers CORS para Swagger UI - Permissivo para testes
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS"
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
       );
       res.setHeader(
         "Access-Control-Allow-Headers",
-        "Content-Type, Authorization"
+        "Content-Type, Authorization, X-Requested-With, X-Forwarded-Proto, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform, User-Agent, Referer"
       );
 
       // Se for HTTPS, adicionar headers de segurança apropriados
@@ -657,7 +657,7 @@ export const setupSwagger = (app: Application): void => {
     );
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Requested-With"
+      "Content-Type, Authorization, X-Requested-With, X-Forwarded-Proto, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform, User-Agent, Referer"
     );
     res.setHeader("Cache-Control", "public, max-age=300"); // Cache por 5 minutos
 
