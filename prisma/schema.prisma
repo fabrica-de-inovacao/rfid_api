@@ -89,6 +89,7 @@ model users {
   safekeepings       safekeepings[]
   tags               tags?                @relation(fields: [tag_id], references: [id], map: "fk_users_tags")
   users_safekeepings users_safekeepings[]
+  activity_logs      activity_logs[]
 }
 
 model users_safekeepings {
@@ -98,4 +99,22 @@ model users_safekeepings {
   users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_safe_user")
 
   @@id([user_id, safekeeping_id], map: "pk_user_safekeeping")
+}
+
+model activity_logs {
+  id          String   @id(map: "pk_activity_logs") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?  @db.Uuid
+  action      String
+  entity_type String
+  entity_id   String?  @db.Uuid
+  entity_name String?
+  description String
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users?   @relation(fields: [user_id], references: [id], onDelete: SetNull, map: "fk_activity_user")
+
+  @@index([created_at])
+  @@index([user_id])
+  @@index([entity_type])
 }

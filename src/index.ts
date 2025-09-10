@@ -2,6 +2,7 @@ import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
 import { config } from "./config/env";
 import { setupSwagger } from "./config/swagger";
 import { errorHandler } from "./middleware/errorHandler";
@@ -12,6 +13,7 @@ import userRoutes from "./routes/userRoutes";
 import evidenceRoutes, { setEvidenceController } from "./routes/evidenceRoutes";
 import scannerRoutes, { setScannerController } from "./routes/scannerRoutes";
 import safekeepingRoutes from "./routes/safekeepingRoutes";
+import activityRoutes from "./routes/activityRoutes";
 
 // Services
 import { MQTTService } from "./services/mqttService";
@@ -44,8 +46,24 @@ class App {
   }
 
   private initializeMiddlewares(): void {
-    // Middlewares de segurança
-    this.app.use(helmet());
+    // Middlewares de segurança (ajustado para permitir fontes externas nas páginas HTML)
+    this.app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              "https://cdnjs.cloudflare.com",
+            ],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+          },
+        },
+      })
+    );
     this.app.use(
       cors({
         origin:
@@ -86,6 +104,11 @@ class App {
     // Configurar Swagger ANTES das outras rotas
     this.initializeSwagger();
 
+    // Rota para a página inicial
+    this.app.get("/", (req, res) => {
+      res.sendFile(path.join(__dirname, "views", "index.html"));
+    });
+
     // Rota de saúde
     this.app.get("/health", (req, res) => {
       res.status(200).json({
@@ -104,13 +127,21 @@ class App {
     this.app.use("/api/v1/tags", evidenceRoutes); // Tags estão nas rotas de evidências
     this.app.use("/api/v1/scans", scannerRoutes);
     this.app.use("/api/v1/safekeepings", safekeepingRoutes);
+    this.app.use("/api/v1/activities", activityRoutes);
 
-    // Rota 404
+    // Rota 404 - Página HTML personalizada
     this.app.use("*", (req, res) => {
-      res.status(404).json({
-        message: "Endpoint não encontrado",
-        path: req.originalUrl,
-      });
+      // Se for uma requisição para a API, retornar JSON
+      if (req.originalUrl.startsWith("/api/")) {
+        res.status(404).json({
+          message: "Endpoint não encontrado",
+          path: req.originalUrl,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Para outras rotas, mostrar página 404 HTML
+        res.status(404).sendFile(path.join(__dirname, "views", "404.html"));
+      }
     });
   }
 

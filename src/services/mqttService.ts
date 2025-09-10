@@ -3,6 +3,7 @@ import { config } from "../config/env";
 import { MQTTMessage } from "../types";
 import { WebSocketService } from "./websocketService";
 import { PrismaClient } from "@prisma/client";
+import { ActivityLogger } from "./activityLogService";
 
 export class MQTTService {
   private client: mqtt.MqttClient;
@@ -308,6 +309,15 @@ export class MQTTService {
               });
             }
 
+            // Log da atividade de scan
+            await ActivityLogger.logTagScanned(
+              undefined, // Não temos userId no contexto do MQTT
+              evidence.id,
+              evidence.name,
+              tag_id,
+              scanner_id || "unknown"
+            );
+
             console.log(`✅ Prova ${evidence.name} escaneada com sucesso`);
           } else {
             console.log(`⚠️ Tag ${tag_id} encontrada mas sem prova vinculada`);
@@ -498,6 +508,21 @@ export class MQTTService {
         } else {
           console.log(
             "⚠️ Skipping scan record creation - no scanner_id provided"
+          );
+        }
+
+        // Log da atividade de vinculação da tag
+        const evidence = await this.prisma.evidences.findUnique({
+          where: { id: evidence_id },
+          select: { name: true },
+        });
+
+        if (evidence) {
+          await ActivityLogger.logTagLinked(
+            undefined, // Não temos userId no contexto do MQTT
+            evidence_id,
+            evidence.name,
+            tag_id
           );
         }
 

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/authService";
 import { AuthenticatedRequest } from "../types";
+import { ActivityLogger } from "../services/activityLogService";
 
 export class AuthController {
   private authService = new AuthService();
@@ -8,6 +9,14 @@ export class AuthController {
   login = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.authService.login(req.body);
+
+      // Log da atividade de login
+      await ActivityLogger.logUserLogin(
+        result.user.id,
+        req.ip || req.connection.remoteAddress,
+        req.get("User-Agent")
+      );
+
       res.status(200).json(result);
     } catch (error) {
       res.status(401).json({

@@ -2,6 +2,7 @@ import { db } from "../config/database";
 import { PasswordUtils } from "../utils/password";
 import { JwtUtils } from "../utils/jwt";
 import { LoginCredentials, TokenPayload } from "../types";
+import { ActivityLogger } from "./activityLogService";
 
 export class AuthService {
   async login(credentials: LoginCredentials) {
@@ -55,6 +56,12 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        admin: user.admin || false,
+      },
     };
   }
 

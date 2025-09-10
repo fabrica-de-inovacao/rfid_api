@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>API de Custódia de Provas RFID v6.0</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+        color: #333;
+        overflow-x: hidden;
+      }
+
+      .container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        padding: 3rem;
+        max-width: 900px;
+        width: 90%;
+        margin: 2rem auto;
+        text-align: center;
+        animation: fadeInUp 1s ease-out;
+        position: relative;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .logo-container {
+        margin-bottom: 2rem;
+        position: relative;
+      }
+
+      .logo {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .logo i {
+        font-size: 3rem;
+        color: white;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+      }
+
+      .version {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+      }
+
+      .description {
+        font-size: 1.1rem;
+        color: #666;
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .feature {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 1.5rem;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .feature::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .feature:hover::before {
+        left: 100%;
+      }
+
+      .feature:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #667eea;
+      }
+
+      .feature h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.8rem;
+        color: #333;
+      }
+
+      .feature p {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+      }
+
+      .btn {
+        padding: 0.8rem 2rem;
+        border: none;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: left 0.3s;
+      }
+
+      .btn:hover::before {
+        left: 100%;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #4caf50, #45a049);
+        color: white;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+      }
+
+      .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(76, 175, 80, 0.6);
+      }
+
+      .status-info {
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+      }
+
+      .status-item {
+        text-align: center;
+      }
+
+      .status-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #4caf50;
+        margin-bottom: 0.3rem;
+      }
+
+      .status-label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .footer {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .footer a {
+        color: #667eea;
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 1rem 0;
+        }
+
+        .container {
+          padding: 2rem 1.5rem;
+          margin: 1rem auto;
+          width: 95%;
+        }
+
+        h1 {
+          font-size: 2rem;
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+
+        .actions {
+          flex-direction: column;
+          align-items: center;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 0.5rem 0;
+        }
+
+        .container {
+          padding: 1.5rem 1rem;
+          margin: 0.5rem auto;
+          width: 98%;
+          border-radius: 15px;
+        }
+
+        h1 {
+          font-size: 1.8rem;
+        }
+
+        .logo {
+          width: 80px;
+          height: 80px;
+        }
+
+        .logo i {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo-container">
+        <div class="logo">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+      </div>
+
+      <h1>API de Custódia de Provas RFID</h1>
+      <div class="version">v6.0.0</div>
+
+      <p class="description">
+        Sistema completo para gestão e rastreamento de provas criminais
+        utilizando tecnologia RFID. Controle de acesso, monitorização em tempo
+        real e auditoria completa das atividades.
+      </p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h3>Gestão de Utilizadores</h3>
+          <p>
+            Sistema completo de autenticação e autorização com controle de
+            acesso baseado em funções
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <h3>Controle de Provas</h3>
+          <p>
+            Registo, vinculação de tags RFID e rastreamento completo de
+            evidências criminais
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-warehouse"></i>
+          </div>
+          <h3>Custódias</h3>
+          <p>
+            Gestão de locais de armazenamento com controle de acesso e
+            monitorização de scanners
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-wifi"></i>
+          </div>
+          <h3>MQTT & WebSocket</h3>
+          <p>
+            Comunicação em tempo real com dispositivos IoT e notificações
+            instantâneas
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <h3>Logs de Atividade</h3>
+          <p>
+            Auditoria completa de todas as ações do sistema com filtros e
+            estatísticas
+          </p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <i class="fas fa-book"></i>
+          </div>
+          <h3>Documentação</h3>
+          <p>
+            API totalmente documentada com Swagger/OpenAPI 3.0 e exemplos
+            interativos
+          </p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a href="/api/v1/api-docs" class="btn btn-primary">
+          <i class="fas fa-book"></i>
+          Documentação da API
+        </a>
+        <a href="/health" class="btn btn-secondary">
+          <i class="fas fa-heartbeat"></i>
+          Status do Sistema
+        </a>
+      </div>
+
+      <div class="status-info">
+        <h3 style="margin-bottom: 1rem; color: #4caf50">
+          <i class="fas fa-server"></i> Status do Servidor
+        </h3>
+        <div class="status-grid" id="statusGrid">
+          <div class="status-item">
+            <div class="status-value" id="uptime">Carregando...</div>
+            <div class="status-label">Tempo Ativo</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value" id="mqttStatus">Carregando...</div>
+            <div class="status-label">MQTT</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value" id="wsClients">Carregando...</div>
+            <div class="status-label">Clientes WebSocket</div>
+          </div>
+          <div class="status-item">
+            <div class="status-value" id="serverStatus">Carregando...</div>
+            <div class="status-label">API Status</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>
+          © 2025 Fábrica de Inovação - Sistema de Custódia de Provas RFID
+          <br />
+          <a
+            href="https://github.com/fabrica-de-inovacao/rfid_api"
+            target="_blank"
+          >
+            <i class="fab fa-github"></i> Código Fonte
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Carregar status do sistema
+      async function loadSystemStatus() {
+        try {
+          const response = await fetch("/health");
+          const data = await response.json();
+
+          // Formatar tempo ativo
+          const uptimeHours = Math.floor(data.uptime / 3600);
+          const uptimeMinutes = Math.floor((data.uptime % 3600) / 60);
+          document.getElementById(
+            "uptime"
+          ).textContent = `${uptimeHours}h ${uptimeMinutes}m`;
+
+          // Status MQTT
+          document.getElementById("mqttStatus").textContent =
+            data.mqtt_connected ? "Conectado" : "Desconectado";
+          document.getElementById("mqttStatus").style.color =
+            data.mqtt_connected ? "#4CAF50" : "#f44336";
+
+          // Clientes WebSocket
+          document.getElementById("wsClients").textContent =
+            data.websocket_clients;
+
+          // Status da API
+          document.getElementById("serverStatus").textContent = data.status;
+          document.getElementById("serverStatus").style.color =
+            data.status === "OK" ? "#4CAF50" : "#f44336";
+        } catch (error) {
+          console.error("Erro ao carregar status:", error);
+          document.getElementById("uptime").textContent = "Erro";
+          document.getElementById("mqttStatus").textContent = "Erro";
+          document.getElementById("wsClients").textContent = "Erro";
+          document.getElementById("serverStatus").textContent = "Erro";
+        }
+      }
+
+      // Carregar status na inicialização
+      loadSystemStatus();
+
+      // Atualizar status a cada 30 segundos
+      setInterval(loadSystemStatus, 30000);
+    </script>
+  </body>
+</html>
