@@ -581,25 +581,48 @@ const options: swaggerJSDoc.Options = {
 const specs = swaggerJSDoc(options);
 
 export const setupSwagger = (app: Application): void => {
-  // Configurar documentação Swagger
+  // Configurar documentação Swagger com opções expandidas
   const swaggerOptions = {
     explorer: true,
-    customCss: ".swagger-ui .topbar { display: none }",
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 20px 0; }
+      .swagger-ui .scheme-container { background: #fafafa; padding: 10px; margin: 10px 0; }
+    `,
     customSiteTitle: "API de Custódia de Provas RFID - Documentação",
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: "none",
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+    },
   };
 
-  // Usar any para contornar problemas de tipos
+  // Usar a configuração padrão do Swagger UI com melhor compatibilidade
   (app as any).use(
     "/api/v1/api-docs",
     swaggerUi.serve,
     swaggerUi.setup(specs, swaggerOptions)
   );
 
-  // Endpoint para obter o JSON do Swagger
+  // Endpoint para obter o JSON do Swagger com headers CORS apropriados
   app.get("/api/v1/api-docs.json", (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.send(specs);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization"
+    );
+    res.json(specs);
   });
 
-  console.log("Documentação Swagger disponível em /api/v1/api-docs");
+  console.log("📚 Documentação Swagger disponível em /api/v1/api-docs");
+  console.log("📋 Swagger JSON disponível em /api/v1/api-docs.json");
 };
