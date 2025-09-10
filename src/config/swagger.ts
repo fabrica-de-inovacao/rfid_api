@@ -121,16 +121,16 @@ export const setupSwagger = (app: Application): void => {
 
   // Usar any para contornar problemas de tipos
   (app as any).use(
-    "/api/docs",
+    "/api/v1/api-docs",
     swaggerUi.serve,
     swaggerUi.setup(specs, swaggerOptions)
   );
 
   // Endpoint para obter o JSON do Swagger
-  app.get("/api/docs.json", (req, res) => {
+  app.get("/api/v1/api-docs.json", (req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.send(specs);
   });
 
-  console.log("Documentação Swagger disponível em /api/docs");
+  console.log("Documentação Swagger disponível em /api/v1/api-docs");
 };

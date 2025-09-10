@@ -32,7 +32,6 @@ class App {
     this.initializeMiddlewares();
     this.initializeControllers();
     this.initializeRoutes();
-    this.initializeSwagger();
     this.initializeErrorHandling();
   }
 
@@ -84,6 +83,9 @@ class App {
   }
 
   private initializeRoutes(): void {
+    // Configurar Swagger ANTES das outras rotas
+    this.initializeSwagger();
+
     // Rota de saúde
     this.app.get("/health", (req, res) => {
       res.status(200).json({
@@ -124,7 +126,7 @@ class App {
     this.app.listen(config.port, () => {
       console.log(`🚀 Servidor rodando na porta ${config.port}`);
       console.log(
-        `📚 Documentação disponível em http://localhost:${config.port}/api/docs`
+        `📚 Documentação disponível em http://localhost:${config.port}/api/v1/api-docs`
       );
       console.log(`🔗 API base URL: http://localhost:${config.port}/api/v1`);
       console.log(`💡 Health check: http://localhost:${config.port}/health`);
