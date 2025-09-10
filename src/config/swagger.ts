@@ -54,7 +54,19 @@ const options: swaggerJSDoc.Options = {
     servers: [
       {
         url: "/api/v1",
-        description: "Servidor Principal",
+        description: "Servidor Atual (Relativo)",
+      },
+      {
+        url: "https://189.90.44.226:9000/api/v1",
+        description: "Servidor de Produção (HTTPS)",
+      },
+      {
+        url: "http://189.90.44.226:9000/api/v1",
+        description: "Servidor de Produção (HTTP)",
+      },
+      {
+        url: "http://localhost:9000/api/v1",
+        description: "Servidor de Desenvolvimento",
       },
     ],
     components: {
@@ -601,14 +613,41 @@ export const setupSwagger = (app: Application): void => {
     },
   };
 
-  // Usar a configuração padrão do Swagger UI com melhor compatibilidade
+  // Middleware específico para o Swagger UI com headers apropriados
   (app as any).use(
     "/api/v1/api-docs",
+    (req: any, res: any, next: any) => {
+      // Headers para compatibilidade HTTPS/HTTP
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+      res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+      // Headers CORS para Swagger UI
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization"
+      );
+
+      // Se for HTTPS, adicionar headers de segurança apropriados
+      if (req.secure || req.headers["x-forwarded-proto"] === "https") {
+        res.setHeader(
+          "Strict-Transport-Security",
+          "max-age=31536000; includeSubDomains"
+        );
+      }
+
+      next();
+    },
     swaggerUi.serve,
     swaggerUi.setup(specs, swaggerOptions)
   );
 
-  // Endpoint para obter o JSON do Swagger com headers CORS apropriados
+  // Endpoint para obter o JSON do Swagger com headers CORS e segurança apropriados
   app.get("/api/v1/api-docs.json", (req, res) => {
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -618,8 +657,14 @@ export const setupSwagger = (app: Application): void => {
     );
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
+      "Content-Type, Authorization, X-Requested-With"
     );
+    res.setHeader("Cache-Control", "public, max-age=300"); // Cache por 5 minutos
+
+    // Headers de segurança
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+
     res.json(specs);
   });
 

@@ -46,7 +46,10 @@ class App {
   }
 
   private initializeMiddlewares(): void {
-    // Middlewares de segurança (ajustado para permitir fontes externas nas páginas HTML)
+    // Trust proxy para funcionar atrás de reverse proxy (Nginx/Apache)
+    this.app.set("trust proxy", true);
+
+    // Middlewares de segurança (configurado para HTTPS e HTTP)
     this.app.use(
       helmet({
         contentSecurityPolicy: {
@@ -56,32 +59,95 @@ class App {
               "'self'",
               "'unsafe-inline'",
               "https://cdnjs.cloudflare.com",
+              "https://fonts.googleapis.com",
             ],
-            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            fontSrc: [
+              "'self'",
+              "https://cdnjs.cloudflare.com",
+              "https://fonts.gstatic.com",
+            ],
+            scriptSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              "'unsafe-eval'", // Necessário para Swagger UI
+              "https://cdnjs.cloudflare.com",
+            ],
+            imgSrc: ["'self'", "data:", "https:", "http:"],
+            connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'self'"],
           },
+        },
+        crossOriginEmbedderPolicy: false, // Desabilitar para compatibilidade
+        hsts: {
+          maxAge: 31536000,
+          includeSubDomains: true,
+          preload: true,
         },
       })
     );
+
+    // CORS configurado para produção HTTPS e desenvolvimento HTTP
+    const allowedOrigins = [];
+
+    if (process.env.NODE_ENV === "production") {
+      // Em produção, aceitar tanto HTTP quanto HTTPS do domínio
+      if (process.env.FRONTEND_URL) {
+        allowedOrigins.push(process.env.FRONTEND_URL);
+      }
+      // Adicionar o próprio servidor para requisições internas
+      allowedOrigins.push(
+        `https://${process.env.SERVER_HOST || "189.90.44.226"}:9000`
+      );
+      allowedOrigins.push(
+        `http://${process.env.SERVER_HOST || "189.90.44.226"}:9000`
+      );
+    } else {
+      // Desenvolvimento
+      allowedOrigins.push("http://localhost:3000", "http://127.0.0.1:3000");
+    }
+
     this.app.use(
       cors({
-        origin:
-          process.env.NODE_ENV === "production"
-            ? process.env.FRONTEND_URL
-            : ["http://localhost:3000", "http://127.0.0.1:3000"],
+        origin: allowedOrigins.length > 0 ? allowedOrigins : true,
         credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+        exposedHeaders: ["X-Total-Count", "X-Page-Count"],
       })
     );
+
+    // Middleware para lidar com proxy reverso e HTTPS
+    this.app.use((req, res, next) => {
+      // Detectar se a requisição veio através de HTTPS e definir propriedades customizadas
+      if (req.headers["x-forwarded-proto"] === "https" || req.secure) {
+        (req as any).isHttps = true;
+        (req as any).protocol = "https";
+      } else {
+        (req as any).isHttps = false;
+        (req as any).protocol = "http";
+      }
+
+      // Headers para todas as responses
+      res.setHeader("X-Powered-By", "RFID Custody API");
+
+      next();
+    });
 
     // Middlewares de parsing
     this.app.use(express.json({ limit: "10mb" }));
     this.app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-    // Middleware de logging
+    // Middleware de logging melhorado
     if (config.nodeEnv === "development") {
       this.app.use((req, res, next) => {
-        console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+        const protocol = (req as any).isHttps ? "https" : "http";
+        console.log(
+          `${new Date().toISOString()} - ${req.method} ${protocol}://${req.get(
+            "host"
+          )}${req.path}`
+        );
         next();
       });
     }
