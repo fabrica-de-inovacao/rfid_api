@@ -111,10 +111,10 @@ class App {
       // Detectar se a requisição veio através de HTTPS e definir propriedades customizadas
       if (req.headers["x-forwarded-proto"] === "https" || req.secure) {
         (req as any).isHttps = true;
-        (req as any).protocol = "https";
+        (req as any).detectedProtocol = "https";
       } else {
         (req as any).isHttps = false;
-        (req as any).protocol = "http";
+        (req as any).detectedProtocol = "http";
       }
 
       // Headers para todas as responses
