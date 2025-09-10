@@ -531,6 +531,67 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        ScannerDetails: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            mac_address: {
+              type: "string",
+              pattern: "^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$",
+              example: "AA:BB:CC:DD:EE:FF",
+            },
+            name: {
+              type: "string",
+              example: "Scanner Principal",
+            },
+            status: {
+              type: "string",
+              enum: ["online", "offline", "maintenance"],
+              example: "online",
+            },
+            last_scan: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2024-01-15T10:30:00Z",
+            },
+            safekeeping_id: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              example: "456e7890-e89b-12d3-a456-426614174001",
+            },
+            safekeeping: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                  example: "456e7890-e89b-12d3-a456-426614174001",
+                },
+                name: {
+                  type: "string",
+                  example: "Depósito Central",
+                },
+              },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-01T00:00:00Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2024-01-15T10:30:00Z",
+            },
+          },
+        },
         LoginRequest: {
           type: "object",
           required: ["email", "senha"],

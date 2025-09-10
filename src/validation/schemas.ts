@@ -102,6 +102,47 @@ export const scannerReportSchema = z
     "Deve fornecer tag_reads ou tags"
   );
 
+// Esquemas de Scanners
+export const createScannerSchema = z.object({
+  name: z.string().min(1, "Nome do scanner é obrigatório"),
+  mac_address: z
+    .string()
+    .regex(
+      /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
+      "MAC address deve estar no formato XX:XX:XX:XX:XX:XX ou XX-XX-XX-XX-XX-XX"
+    ),
+  safekeeping_id: z
+    .string()
+    .uuid("ID da custódia deve ser um UUID válido")
+    .optional(),
+  description: z.string().optional(),
+});
+
+export const updateScannerSchema = z.object({
+  name: z.string().min(1, "Nome do scanner é obrigatório").optional(),
+  safekeeping_id: z
+    .string()
+    .uuid("ID da custódia deve ser um UUID válido")
+    .optional(),
+  description: z.string().optional(),
+  status: z
+    .enum(["ONLINE", "OFFLINE", "MAINTENANCE", "ERROR"], {
+      errorMap: () => ({
+        message: "Status deve ser ONLINE, OFFLINE, MAINTENANCE ou ERROR",
+      }),
+    })
+    .optional(),
+});
+
+export const scannerFiltersSchema = z.object({
+  status: z.enum(["ONLINE", "OFFLINE", "MAINTENANCE", "ERROR"]).optional(),
+  safekeeping_id: z
+    .string()
+    .uuid("ID da custódia deve ser um UUID válido")
+    .optional(),
+  include_stats: z.enum(["true", "false"]).optional(),
+});
+
 // Esquemas de parâmetros
 export const uuidParamSchema = z.object({
   id: z.string().uuid("ID deve ser um UUID válido"),
@@ -116,4 +157,7 @@ export type UpdateSafekeepingData = z.infer<typeof updateSafekeepingSchema>;
 export type LinkTagToEvidenceData = z.infer<typeof linkTagToEvidenceSchema>;
 export type TagReadData = z.infer<typeof tagReadSchema>;
 export type ScannerReportData = z.infer<typeof scannerReportSchema>;
+export type CreateScannerData = z.infer<typeof createScannerSchema>;
+export type UpdateScannerData = z.infer<typeof updateScannerSchema>;
+export type ScannerFiltersData = z.infer<typeof scannerFiltersSchema>;
 export type UuidParam = z.infer<typeof uuidParamSchema>;

@@ -3,7 +3,13 @@ import { ScannerController } from "../controllers/scannerController";
 import { validateRequest } from "../middleware/validation";
 import { validateHardwareApiKey } from "../middleware/hardware";
 import { authenticateToken } from "../middleware/auth";
-import { scannerReportSchema } from "../validation/schemas";
+import {
+  scannerReportSchema,
+  createScannerSchema,
+  updateScannerSchema,
+  scannerFiltersSchema,
+  uuidParamSchema,
+} from "../validation/schemas";
 
 const router = Router();
 
@@ -160,6 +166,284 @@ router.get("/status", authenticateToken, (req, res) =>
  */
 router.get("/recent", authenticateToken, (req, res) =>
   scannerController.getRecentScans(req, res)
+);
+
+// ========== ROTAS ADMINISTRATIVAS DE SCANNERS ==========
+
+/**
+ * @swagger
+ * /scans/scanners:
+ *   post:
+ *     tags: [Administração - Scanners]
+ *     summary: Cadastrar um novo scanner
+ *     description: Cria um novo scanner no sistema. Requer privilégios de administrador.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - mac_address
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Scanner Entrada Principal"
+ *                 description: Nome único do scanner
+ *               mac_address:
+ *                 type: string
+ *                 example: "AA:BB:CC:DD:EE:FF"
+ *                 description: Endereço MAC único do scanner
+ *               safekeeping_id:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "123e4567-e89b-12d3-a456-426614174000"
+ *                 description: ID da custódia associada (opcional)
+ *               description:
+ *                 type: string
+ *                 example: "Scanner localizado na entrada principal do cofre"
+ *                 description: Descrição adicional do scanner (opcional)
+ *     responses:
+ *       201:
+ *         description: Scanner criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Scanner criado com sucesso"
+ *                 data:
+ *                   $ref: '#/components/schemas/ScannerDetails'
+ *       400:
+ *         description: Dados inválidos ou scanner já existe
+ *       401:
+ *         description: Não autorizado
+ */
+router.post(
+  "/scanners",
+  authenticateToken,
+  validateRequest({ body: createScannerSchema }),
+  (req, res) => scannerController.createScanner(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/scanners:
+ *   get:
+ *     tags: [Administração - Scanners]
+ *     summary: Listar todos os scanners
+ *     description: Retorna uma lista de todos os scanners cadastrados no sistema com filtros opcionais
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ONLINE, OFFLINE, MAINTENANCE, ERROR]
+ *         description: Filtrar por status do scanner
+ *       - in: query
+ *         name: safekeeping_id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filtrar por custódia associada
+ *       - in: query
+ *         name: include_stats
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *           default: false
+ *         description: Incluir estatísticas de uso dos scanners
+ *     responses:
+ *       200:
+ *         description: Lista de scanners retornada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ScannerDetails'
+ *       401:
+ *         description: Não autorizado
+ */
+router.get(
+  "/scanners",
+  authenticateToken,
+  validateRequest({ query: scannerFiltersSchema }),
+  (req, res) => scannerController.listScanners(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/scanners/{id}:
+ *   get:
+ *     tags: [Administração - Scanners]
+ *     summary: Obter detalhes de um scanner
+ *     description: Retorna informações detalhadas sobre um scanner específico
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID único do scanner
+ *     responses:
+ *       200:
+ *         description: Detalhes do scanner retornados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ScannerDetails'
+ *       404:
+ *         description: Scanner não encontrado
+ *       401:
+ *         description: Não autorizado
+ */
+router.get(
+  "/scanners/:id",
+  authenticateToken,
+  validateRequest({ params: uuidParamSchema }),
+  (req, res) => scannerController.getScannerById(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/scanners/{id}:
+ *   put:
+ *     tags: [Administração - Scanners]
+ *     summary: Atualizar um scanner
+ *     description: Atualiza as informações de um scanner existente
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID único do scanner
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Scanner Entrada Principal - Atualizado"
+ *               safekeeping_id:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "123e4567-e89b-12d3-a456-426614174000"
+ *               description:
+ *                 type: string
+ *                 example: "Scanner relocado para a nova entrada"
+ *               status:
+ *                 type: string
+ *                 enum: [ONLINE, OFFLINE, MAINTENANCE, ERROR]
+ *                 example: "MAINTENANCE"
+ *     responses:
+ *       200:
+ *         description: Scanner atualizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Scanner atualizado com sucesso"
+ *                 data:
+ *                   $ref: '#/components/schemas/ScannerDetails'
+ *       400:
+ *         description: Dados inválidos
+ *       404:
+ *         description: Scanner não encontrado
+ *       401:
+ *         description: Não autorizado
+ */
+router.put(
+  "/scanners/:id",
+  authenticateToken,
+  validateRequest({
+    params: uuidParamSchema,
+    body: updateScannerSchema,
+  }),
+  (req, res) => scannerController.updateScanner(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/scanners/{id}:
+ *   delete:
+ *     tags: [Administração - Scanners]
+ *     summary: Deletar um scanner
+ *     description: Remove um scanner do sistema. Só é possível deletar scanners sem histórico de scans.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID único do scanner
+ *     responses:
+ *       200:
+ *         description: Scanner deletado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Scanner deletado com sucesso"
+ *       400:
+ *         description: Não é possível deletar scanner com histórico de scans
+ *       404:
+ *         description: Scanner não encontrado
+ *       401:
+ *         description: Não autorizado
+ */
+router.delete(
+  "/scanners/:id",
+  authenticateToken,
+  validateRequest({ params: uuidParamSchema }),
+  (req, res) => scannerController.deleteScanner(req, res)
 );
 
 export default router;
