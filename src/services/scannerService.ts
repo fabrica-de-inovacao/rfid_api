@@ -358,9 +358,24 @@ export class ScannerService {
       }
     }
 
+    // Prepare update payload for Prisma. If caller provided safekeeping_id (foreign key),
+    // Prisma client expects nested relation update (safekeepings: { connect: { id } }).
+    // We convert the external-friendly field `safekeeping_id` into the nested format
+    // so the public API doesn't need to change.
+    // Only forward fields that exist on the Prisma model to avoid unknown argument errors.
+    const updateData: any = {};
+    if (data.name) updateData.name = data.name;
+    if (data.status) updateData.status = data.status;
+    if ((data as any).last_scan) updateData.last_scan = (data as any).last_scan;
+
+    if (data.safekeeping_id) {
+      // Convert external safekeeping_id into nested connect for Prisma relation
+      updateData.safekeepings = { connect: { id: data.safekeeping_id } };
+    }
+
     const scanner = await db.scanners.update({
       where: { id },
-      data,
+      data: updateData,
       include: {
         safekeepings: true,
       },
