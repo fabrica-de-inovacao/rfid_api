@@ -254,28 +254,27 @@ export class ScannerService {
     // Se solicitado, incluir informações de scanners pendentes
     if (options?.include_pending) {
       try {
-        // Temporariamente comentado até resolver o Prisma
-        // const pendingScanners = await db.pending_scanners.findMany({
-        //   where: { status: 'pending' },
-        //   orderBy: { last_seen: 'desc' }
-        // });
+        const pendingScanners = await db.pending_scanners.findMany({
+          where: { status: "pending" },
+          orderBy: { last_seen: "desc" },
+        });
 
-        // const pendingScansInfo = pendingScanners.map(pending => ({
-        //   id: `pending-${pending.id}`,
-        //   scanner: {
-        //     name: pending.suggested_name,
-        //     mac_address: pending.mac_address,
-        //     status: 'pending'
-        //   },
-        //   tag: null,
-        //   created_at: pending.last_seen,
-        //   is_pending: true,
-        //   scan_count: pending.scan_count
-        // }));
+        const pendingScansInfo = pendingScanners.map((pending) => ({
+          id: `pending-${pending.id}`,
+          scanner: {
+            name: pending.suggested_name,
+            mac_address: pending.mac_address,
+            status: "pending",
+          },
+          tag: null,
+          created_at: pending.last_seen,
+          is_pending: true,
+          scan_count: pending.scan_count,
+        }));
 
-        // result = [...pendingScansInfo, ...result];
+        result = [...pendingScansInfo, ...result];
         console.log(
-          `[ScannerService] Scanners pendentes temporariamente indisponíveis`
+          `[ScannerService] Incluídos ${pendingScanners.length} scanners pendentes`
         );
       } catch (error) {
         console.error(
@@ -559,14 +558,12 @@ export class ScannerService {
       whereClause.status = filters.status;
     }
 
-    // Temporariamente vou retornar array vazio até resolver o erro do Prisma
-    // const pendingScanners = await db.pending_scanners.findMany({
-    //   where: whereClause,
-    //   orderBy: { created_at: 'desc' }
-    // });
+    const pendingScanners = await db.pending_scanners.findMany({
+      where: whereClause,
+      orderBy: { created_at: "desc" },
+    });
 
-    // return pendingScanners;
-    return [];
+    return pendingScanners;
   }
 
   /**
@@ -578,35 +575,31 @@ export class ScannerService {
   ) {
     console.log(`[ScannerService] Aprovando scanner pendente: ${pendingId}`);
 
-    // Temporariamente vou simular o processo
-    // const pendingScanner = await db.pending_scanners.findUnique({
-    //   where: { id: pendingId }
-    // });
+    const pendingScanner = await db.pending_scanners.findUnique({
+      where: { id: pendingId },
+    });
 
-    // if (!pendingScanner) {
-    //   throw new Error("Scanner pendente não encontrado");
-    // }
+    if (!pendingScanner) {
+      throw new Error("Scanner pendente não encontrado");
+    }
 
-    // // Criar scanner oficial
-    // const scanner = await db.scanners.create({
-    //   data: {
-    //     name: data.name,
-    //     mac_address: pendingScanner.mac_address,
-    //     safekeeping_id: data.safekeeping_id,
-    //     status: "online"
-    //   }
-    // });
+    // Criar scanner oficial
+    const scanner = await db.scanners.create({
+      data: {
+        name: data.name,
+        mac_address: pendingScanner.mac_address,
+        safekeeping_id: data.safekeeping_id,
+        status: "online",
+      },
+    });
 
-    // // Marcar como aprovado
-    // await db.pending_scanners.update({
-    //   where: { id: pendingId },
-    //   data: { status: "approved" }
-    // });
+    // Marcar como aprovado
+    await db.pending_scanners.update({
+      where: { id: pendingId },
+      data: { status: "approved" },
+    });
 
-    // return scanner;
-    throw new Error(
-      "Funcionalidade temporariamente indisponível - aguardando correção do Prisma"
-    );
+    return scanner;
   }
 
   /**
@@ -615,15 +608,12 @@ export class ScannerService {
   async rejectPendingScanner(pendingId: string) {
     console.log(`[ScannerService] Rejeitando scanner pendente: ${pendingId}`);
 
-    // Temporariamente vou simular o processo
-    // await db.pending_scanners.update({
-    //   where: { id: pendingId },
-    //   data: { status: "rejected" }
-    // });
+    await db.pending_scanners.update({
+      where: { id: pendingId },
+      data: { status: "rejected" },
+    });
 
-    throw new Error(
-      "Funcionalidade temporariamente indisponível - aguardando correção do Prisma"
-    );
+    return { success: true, message: "Scanner pendente rejeitado com sucesso" };
   }
 
   /**
