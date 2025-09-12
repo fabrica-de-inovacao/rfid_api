@@ -143,6 +143,13 @@ export class ScannerService {
           });
         } else {
           // Tag não encontrada ou não vinculada a uma prova
+          console.log(`🔍 [TAG NOT FOUND] Tag não encontrada no sistema:`, {
+            tag_uid: tagUid,
+            scanner: scanner.name,
+            message: "Tag não está registrada ou não vinculada a evidência",
+            recommendation: "Registre a evidência e vincule a tag via /tags/link-evidence"
+          });
+          
           results.push({
             tag_uid: tagUid,
             evidence: null,
@@ -587,15 +594,13 @@ export class ScannerService {
     });
 
     if (existingScanner) {
-      // Se já existe, apenas marcar o pendente como aprovado e retornar o existente
-      await db.pending_scanners.update({
-        where: { id: pendingId },
-        data: { status: "approved" },
-      });
+      // Se já existe, remover o registro pendente da tabela e retornar o existente
+      await db.pending_scanners.delete({ where: { id: pendingId } });
 
       console.log(
-        `[ScannerService] Scanner já existe, marcando pendente como aprovado`
+        `[ScannerService] Scanner já existe, removendo entrada pendente e retornando scanner existente`
       );
+
       return existingScanner;
     }
 
@@ -609,15 +614,12 @@ export class ScannerService {
       },
     });
 
-    // Marcar como aprovado
-    await db.pending_scanners.update({
-      where: { id: pendingId },
-      data: { status: "approved" },
-    });
+    // Remover o registro pendente agora que criamos o scanner oficial
+    await db.pending_scanners.delete({ where: { id: pendingId } });
 
-    console.log(
-      `[ScannerService] Novo scanner criado e aprovado: ${scanner.name}`
-    );
+    console.log(`
+[ScannerService] Novo scanner criado e entrada pendente removida: ${scanner.name}
+`);
     return scanner;
   }
 
