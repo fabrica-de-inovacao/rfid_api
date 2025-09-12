@@ -93,7 +93,8 @@ export const scannerReportSchema = z
       ),
     tag_reads: z
       .array(tagReadSchema)
-      .min(1, "Pelo menos uma tag deve ser fornecida"),
+      .min(1, "Pelo menos uma tag deve ser fornecida")
+      .optional(),
     // Manter compatibilidade com formato antigo
     tags: z.array(z.string()).optional(),
   })

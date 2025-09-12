@@ -118,3 +118,15 @@ model activity_logs {
   @@index([user_id])
   @@index([entity_type])
 }
+
+model pending_scanners {
+  id              String   @id(map: "pk_pending_scanners") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mac_address     String   @unique
+  suggested_name  String
+  first_seen      DateTime @default(now()) @db.Timestamptz(6)
+  last_seen       DateTime @default(now()) @db.Timestamptz(6)
+  scan_count      Int      @default(1)
+  status          String   @default("pending") // pending, approved, rejected
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @db.Timestamptz(6)
+}

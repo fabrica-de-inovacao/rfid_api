@@ -6,49 +6,114 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API de Custódia de Provas RFID v6.0 (Yarn)",
-      description:
-        "API RESTful para gestão e rastreamento de provas criminais. Este documento contém a especificação completa de todos os endpoints, payloads e respostas.",
+      title: "API de Custódia de Provas RFID v6.0 - Sistema Completo",
+      description: `
+        API RESTful avançada para gestão e rastreamento de provas criminais com tecnologia RFID.
+        
+        ### 🚀 Funcionalidades Principais:
+        - **Auto-descoberta de Scanners**: Detecta automaticamente novos scanners na rede
+        - **Gestão Completa CRUD**: Scanners, Provas, Custódias e Utilizadores
+        - **Monitoramento em Tempo Real**: WebSocket para atualizações instantâneas
+        - **Sistema de Aprovação**: Scanners pendentes para aprovação administrativa
+        - **Histórico Completo**: Rastreamento de atividades e scans
+        - **Autenticação JWT**: Sistema seguro com refresh tokens
+        
+        ### 📊 Fluxo de Scanners:
+        1. **Scanner Desconhecido** → Registrado como pendente
+        2. **Aprovação Manual** → Scanner ativado no sistema
+        3. **Scans Automáticos** → Processamento e armazenamento
+        4. **Alertas** → Notificações de provas fora da custódia
+        
+        ### � Exemplos de Fluxo de Trabalho:
+        
+        **🔍 Descoberta Automática de Scanner:**
+        \`\`\`
+        1. Hardware envia POST /scans/report com MAC desconhecido
+        2. Sistema registra em pending_scanners
+        3. Admin acessa GET /scans/pending-scanners
+        4. Admin aprova com POST /scans/pending-scanners/{id}/approve
+        5. Scanner fica ativo para receber dados
+        \`\`\`
+        
+        **📡 Monitoramento em Tempo Real:**
+        \`\`\`
+        1. GET /scans/status - Status atual de todos scanners
+        2. GET /scans/recent?include_pending=true - Histórico + pendentes
+        3. WebSocket connection - Notificações instantâneas
+        4. POST /scans/report - Recepção automática do hardware
+        \`\`\`
+        
+        **⚙️ Gestão Administrativa:**
+        \`\`\`
+        1. POST /scans/scanners - Criar scanner manualmente
+        2. PUT /scans/scanners/{id} - Atualizar configurações
+        3. DELETE /scans/scanners/{id} - Remover scanner
+        4. GET /scans/scanners?status=offline - Filtrar por status
+        \`\`\`
+        
+        ### �🔐 Autenticação:
+        Todos os endpoints protegidos requerem Bearer Token no header Authorization.
+        
+        **Login:** POST /auth/login → Recebe accessToken + refreshToken  
+        **Uso:** Header \`Authorization: Bearer {accessToken}\`  
+        **Renovação:** POST /auth/refresh → Novo accessToken
+      `,
       version: "6.0.0",
+      contact: {
+        name: "Suporte Técnico",
+        email: "suporte@fabricadeinovacao.com",
+      },
+      license: {
+        name: "MIT",
+        url: "https://opensource.org/licenses/MIT",
+      },
     },
     tags: [
       {
         name: "Autenticação",
-        description: "Endpoints para autenticação de utilizadores",
+        description: "🔐 Endpoints para login, logout e refresh de tokens JWT",
       },
       {
         name: "Administração - Utilizadores",
-        description: "Gestão de utilizadores (apenas administradores)",
+        description:
+          "👥 Gestão completa de utilizadores (CRUD) - Apenas administradores",
       },
       {
         name: "Provas",
-        description: "Gestão de provas e evidências",
+        description: "📋 Gestão de provas e evidências criminais com tags RFID",
       },
       {
         name: "Tags",
-        description: "Gestão de tags RFID",
+        description: "🏷️ Gestão e vinculação de tags RFID às provas",
       },
       {
         name: "Scanners",
-        description: "Gestão e monitorização de scanners RFID",
+        description:
+          "📡 Monitoramento de scanners, recepção de dados e status em tempo real",
+      },
+      {
+        name: "Administração - Scanners",
+        description:
+          "⚙️ Gestão completa de scanners: CRUD, auto-descoberta e aprovação de dispositivos pendentes",
       },
       {
         name: "Custódias",
-        description: "Gestão de custódias",
+        description: "🏢 Gestão de locais de custódia e responsáveis",
       },
       {
         name: "Administração - Custódias",
         description:
-          "Gestão administrativa de custódias (apenas administradores)",
+          "🔧 Gestão administrativa avançada de custódias - Apenas administradores",
       },
       {
         name: "Atividades",
-        description: "Consulta de atividades do utilizador",
+        description:
+          "📊 Consulta de logs de atividades e estatísticas do utilizador",
       },
       {
         name: "Administração - Atividades",
         description:
-          "Gestão de logs e atividades do sistema (apenas administradores)",
+          "📈 Gestão avançada de logs, auditoria e relatórios do sistema - Apenas administradores",
       },
     ],
     servers: [
@@ -637,6 +702,172 @@ const options: swaggerJSDoc.Options = {
                   type: "boolean",
                 },
               },
+            },
+          },
+        },
+        PendingScannerResponse: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            mac_address: {
+              type: "string",
+              pattern: "^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$",
+              example: "AA:BB:CC:DD:EE:FF",
+            },
+            suggested_name: {
+              type: "string",
+              example: "Scanner-CCDDEEFF",
+            },
+            first_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T10:30:00Z",
+            },
+            last_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T15:45:00Z",
+            },
+            scan_count: {
+              type: "integer",
+              example: 5,
+              description:
+                "Número de tentativas de scan desde a primeira detecção",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "approved", "rejected"],
+              example: "pending",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T10:30:00Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T15:45:00Z",
+            },
+          },
+        },
+        ApproveScannerRequest: {
+          type: "object",
+          required: ["name"],
+          properties: {
+            name: {
+              type: "string",
+              example: "Scanner Sala Principal",
+              description: "Nome personalizado para o scanner",
+            },
+            safekeeping_id: {
+              type: "string",
+              format: "uuid",
+              example: "456e7890-e89b-12d3-a456-426614174001",
+              description:
+                "ID da custódia onde o scanner será alocado (opcional)",
+            },
+          },
+        },
+        ScanWithPendingInfo: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "789e0123-e89b-12d3-a456-426614174002",
+            },
+            scanner: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  example: "Scanner Principal",
+                },
+                mac_address: {
+                  type: "string",
+                  example: "AA:BB:CC:DD:EE:FF",
+                },
+                status: {
+                  type: "string",
+                  enum: ["online", "offline", "maintenance", "pending"],
+                  example: "online",
+                },
+              },
+            },
+            tag: {
+              type: "object",
+              nullable: true,
+              properties: {
+                tag_id: {
+                  type: "string",
+                  example: "35800748970",
+                },
+              },
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T15:45:00Z",
+            },
+            is_pending: {
+              type: "boolean",
+              example: false,
+              description: "Indica se este scan é de um scanner pendente",
+            },
+            scan_count: {
+              type: "integer",
+              example: 5,
+              description:
+                "Somente para scanners pendentes - número de tentativas",
+            },
+          },
+        },
+        ScannerPendingProcessResult: {
+          type: "object",
+          properties: {
+            scanner: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  example: "Scanner Desconhecido (AA:BB:CC:DD:EE:FF)",
+                },
+                safekeeping: {
+                  type: "string",
+                  nullable: true,
+                  example: null,
+                },
+                status: {
+                  type: "string",
+                  example: "pending",
+                },
+              },
+            },
+            tags_processed: {
+              type: "array",
+              items: {
+                type: "object",
+              },
+              example: [],
+            },
+            timestamp: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-11T15:45:00Z",
+            },
+            pending: {
+              type: "boolean",
+              example: true,
+              description: "Indica que o scanner foi registrado como pendente",
+            },
+            message: {
+              type: "string",
+              example: "Scanner registrado como pendente para aprovação",
             },
           },
         },

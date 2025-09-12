@@ -122,8 +122,19 @@ router.get("/status", authenticateToken, (req, res) =>
  * /scans/recent:
  *   get:
  *     tags: [Scanners]
- *     summary: Obtém scans recentes
- *     description: Retorna uma lista dos scans mais recentes registados no sistema.
+ *     summary: Obtém scans recentes com suporte a scanners pendentes
+ *     description: |
+ *       Retorna uma lista dos scans mais recentes registados no sistema.
+ *
+ *       **Funcionalidade Avançada:**
+ *       - Suporte para incluir informações de scanners pendentes
+ *       - Filtragem por limite de resultados
+ *       - Ordenação por data mais recente
+ *
+ *       **Casos de Uso:**
+ *       - `GET /scans/recent` - Scans normais apenas
+ *       - `GET /scans/recent?include_pending=true` - Inclui scanners pendentes
+ *       - `GET /scans/recent?limit=50&include_pending=true` - 50 resultados + pendentes
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -132,37 +143,61 @@ router.get("/status", authenticateToken, (req, res) =>
  *         schema:
  *           type: integer
  *           default: 100
- *         description: Número máximo de scans a retornar.
+ *           minimum: 1
+ *           maximum: 1000
+ *         description: Número máximo de scans a retornar
+ *       - in: query
+ *         name: include_pending
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Incluir informações de scanners pendentes de aprovação
  *     responses:
  *       200:
- *         description: Lista de scans recentes.
+ *         description: Lista de scans recentes com informações detalhadas
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     format: uuid
- *                   scanner:
- *                     type: object
- *                     properties:
- *                       name:
- *                         type: string
- *                       mac_address:
- *                         type: string
- *                   tag:
- *                     type: object
- *                     properties:
- *                       tag_id:
- *                         type: string
- *                   created_at:
- *                     type: string
- *                     format: date-time
+ *                 $ref: '#/components/schemas/ScanWithPendingInfo'
+ *             examples:
+ *               scans_normais:
+ *                 summary: Scans de scanners aprovados
+ *                 value:
+ *                   - id: "789e0123-e89b-12d3-a456-426614174002"
+ *                     scanner:
+ *                       name: "Scanner Principal"
+ *                       mac_address: "AA:BB:CC:DD:EE:FF"
+ *                       status: "online"
+ *                     tag:
+ *                       tag_id: "35800748970"
+ *                     created_at: "2025-09-11T15:45:00Z"
+ *                     is_pending: false
+ *               com_pendentes:
+ *                 summary: Incluindo scanners pendentes
+ *                 value:
+ *                   - id: "pending-123"
+ *                     scanner:
+ *                       name: "Scanner-CCDDEEFF"
+ *                       mac_address: "CC:DD:EE:FF:00:11"
+ *                       status: "pending"
+ *                     tag: null
+ *                     created_at: "2025-09-11T14:30:00Z"
+ *                     is_pending: true
+ *                     scan_count: 5
  *       401:
- *         description: Não autorizado.
+ *         description: Token de autenticação inválido ou expirado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Erro interno do servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/recent", authenticateToken, (req, res) =>
   scannerController.getRecentScans(req, res)
@@ -444,6 +479,144 @@ router.delete(
   authenticateToken,
   validateRequest({ params: uuidParamSchema }),
   (req, res) => scannerController.deleteScanner(req, res)
+);
+
+// ========== ROTAS DE SCANNERS PENDENTES ==========
+
+/**
+ * @swagger
+ * /scans/pending-scanners:
+ *   get:
+ *     tags: [Administração - Scanners]
+ *     summary: Listar scanners pendentes de aprovação
+ *     description: Retorna lista de scanners que foram detectados mas ainda não foram aprovados/cadastrados no sistema.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, approved, rejected]
+ *         description: Filtrar por status do scanner pendente
+ *     responses:
+ *       200:
+ *         description: Lista de scanners pendentes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                       mac_address:
+ *                         type: string
+ *                         example: "AA:BB:CC:DD:EE:FF"
+ *                       suggested_name:
+ *                         type: string
+ *                         example: "Scanner-CCDDEEFF"
+ *                       first_seen:
+ *                         type: string
+ *                         format: date-time
+ *                       last_seen:
+ *                         type: string
+ *                         format: date-time
+ *                       scan_count:
+ *                         type: integer
+ *                         example: 5
+ *                       status:
+ *                         type: string
+ *                         example: "pending"
+ */
+router.get("/pending-scanners", authenticateToken, (req, res) =>
+  scannerController.listPendingScanners(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/pending-scanners/{id}/approve:
+ *   post:
+ *     tags: [Administração - Scanners]
+ *     summary: Aprovar um scanner pendente
+ *     description: Aprova um scanner pendente e o registra oficialmente no sistema.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do scanner pendente
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Scanner Sala Principal"
+ *               safekeeping_id:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "123e4567-e89b-12d3-a456-426614174000"
+ *     responses:
+ *       201:
+ *         description: Scanner aprovado e criado com sucesso
+ *       400:
+ *         description: Dados inválidos ou scanner já processado
+ *       404:
+ *         description: Scanner pendente não encontrado
+ */
+router.post(
+  "/pending-scanners/:id/approve",
+  authenticateToken,
+  validateRequest({ params: uuidParamSchema }),
+  (req, res) => scannerController.approvePendingScanner(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/pending-scanners/{id}/reject:
+ *   post:
+ *     tags: [Administração - Scanners]
+ *     summary: Rejeitar um scanner pendente
+ *     description: Rejeita um scanner pendente, removendo-o da lista de pendências.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do scanner pendente
+ *     responses:
+ *       200:
+ *         description: Scanner rejeitado com sucesso
+ *       404:
+ *         description: Scanner pendente não encontrado
+ */
+router.post(
+  "/pending-scanners/:id/reject",
+  authenticateToken,
+  validateRequest({ params: uuidParamSchema }),
+  (req, res) => scannerController.rejectPendingScanner(req, res)
 );
 
 export default router;

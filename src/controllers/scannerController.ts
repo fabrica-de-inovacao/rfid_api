@@ -12,6 +12,12 @@ export class ScannerController {
 
   processScannerReport = async (req: Request, res: Response): Promise<void> => {
     try {
+      console.log("=== DEBUG SCANNER REPORT ===");
+      console.log("Body recebido:", JSON.stringify(req.body, null, 2));
+      console.log("MAC Address recebido:", req.body.mac_address);
+      console.log("Tags/Tag_reads:", req.body.tags || req.body.tag_reads);
+      console.log("============================");
+
       const scanResult = await this.scannerService.processScannerReport(
         req.body
       );
@@ -74,8 +80,14 @@ export class ScannerController {
       const limit = req.query.limit
         ? parseInt(req.query.limit as string)
         : undefined;
-      console.log(`[getRecentScans] Buscando scans com limit: ${limit}`);
-      const scans = await this.scannerService.getRecentScans(limit);
+      const includePending = req.query.include_pending === "true";
+
+      console.log(
+        `[getRecentScans] Buscando scans com limit: ${limit}, include_pending: ${includePending}`
+      );
+      const scans = await this.scannerService.getRecentScans(limit, {
+        include_pending: includePending,
+      });
       console.log(`[getRecentScans] Retornando ${scans.length} scans:`, scans);
       res.status(200).json(scans);
     } catch (error) {
@@ -196,6 +208,84 @@ export class ScannerController {
         success: false,
         message:
           error instanceof Error ? error.message : "Erro ao deletar scanner",
+      });
+    }
+  };
+
+  // ========== ENDPOINTS DE SCANNERS PENDENTES ==========
+
+  /**
+   * Listar scanners pendentes
+   */
+  listPendingScanners = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { status } = req.query;
+      const pendingScanners = await this.scannerService.listPendingScanners({
+        status: status as string,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: pendingScanners,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Erro ao listar scanners pendentes",
+      });
+    }
+  };
+
+  /**
+   * Aprovar um scanner pendente (criar scanner oficial)
+   */
+  approvePendingScanner = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { name, safekeeping_id } = req.body;
+
+      const result = await this.scannerService.approvePendingScanner(id, {
+        name,
+        safekeeping_id,
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Scanner aprovado e criado com sucesso",
+        data: result,
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Erro ao aprovar scanner",
+      });
+    }
+  };
+
+  /**
+   * Rejeitar um scanner pendente
+   */
+  rejectPendingScanner = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      await this.scannerService.rejectPendingScanner(id);
+
+      res.status(200).json({
+        success: true,
+        message: "Scanner rejeitado com sucesso",
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Erro ao rejeitar scanner",
       });
     }
   };
