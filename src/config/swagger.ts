@@ -535,6 +535,93 @@ const options: swaggerJSDoc.Options = {
             },
           },
         },
+        SafekeepingDetailsScanner: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            name: { type: "string", example: "Scanner Principal" },
+            mac_address: { type: "string", example: "AA:BB:CC:DD:EE:FF" },
+            status: { type: "string", example: "ACTIVE" },
+            last_scan: { type: "string", format: "date-time", nullable: true },
+            antenna_id: { type: "string", nullable: true },
+            location: { type: "string", nullable: true },
+          },
+        },
+        SafekeepingDetailsItem: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            tag_id: { type: "string", nullable: true },
+            name: { type: "string" },
+            description: { type: "string", nullable: true },
+            last_seen_at: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+            },
+            last_seen_by_scanner_id: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+            },
+            present: { type: "boolean" },
+            metadata: {
+              type: "object",
+              properties: {
+                status: { type: "string" },
+                registered_by: { type: "string", nullable: true },
+              },
+            },
+          },
+        },
+        SafekeepingDetailsResponse: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            name: { type: "string" },
+            description: { type: "string", nullable: true },
+            manager: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: { type: "string", format: "uuid" },
+                name: { type: "string" },
+                email: { type: "string" },
+                phone: { type: "string", nullable: true },
+              },
+            },
+            scanners: {
+              type: "array",
+              nullable: true,
+              items: { $ref: "#/components/schemas/SafekeepingDetailsScanner" },
+            },
+            items: {
+              type: "object",
+              nullable: true,
+              properties: {
+                data: {
+                  type: "array",
+                  items: {
+                    $ref: "#/components/schemas/SafekeepingDetailsItem",
+                  },
+                },
+                meta: {
+                  type: "object",
+                  properties: {
+                    total: { type: "integer" },
+                    page: { type: "integer" },
+                    per_page: { type: "integer" },
+                    total_pages: { type: "integer" },
+                    total_present: { type: "integer" },
+                    total_absent: { type: "integer" },
+                  },
+                },
+              },
+            },
+            created_at: { type: "string", format: "date-time" },
+            updated_at: { type: "string", format: "date-time" },
+          },
+        },
         CreateSafekeepingRequest: {
           type: "object",
           required: ["name"],

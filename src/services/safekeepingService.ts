@@ -99,7 +99,168 @@ export class SafekeepingService {
     }
   }
 
-  // Obter custódia por ID
+  // Obter custódia detalhada por ID com opções avançadas
+  async getSafekeepingDetailsById(
+    id: string,
+    options: {
+      include_items?: boolean;
+      include_scanners?: boolean;
+      items_page?: number;
+      items_per_page?: number;
+      presence_threshold_minutes?: number;
+    } = {}
+  ) {
+    try {
+      const {
+        include_items = false,
+        include_scanners = false,
+        items_page = 1,
+        items_per_page = 50,
+        presence_threshold_minutes = 60,
+      } = options;
+
+      // Buscar custódia básica com manager
+      const safekeeping = await prisma.safekeepings.findUnique({
+        where: { id },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              setor: true,
+            },
+          },
+        },
+      });
+
+      if (!safekeeping) {
+        throw new Error("Custódia não encontrada");
+      }
+
+      // Estrutura base da resposta
+      const result: any = {
+        id: safekeeping.id,
+        name: safekeeping.name,
+        description: null, // campo não existe no schema atual, mas incluído para futuro
+        manager: safekeeping.users
+          ? {
+              id: safekeeping.users.id,
+              name: safekeeping.users.name,
+              email: safekeeping.users.email,
+              phone: null, // campo não existe no schema atual
+            }
+          : null,
+        created_at: safekeeping.created_at,
+        updated_at: safekeeping.updated_at,
+      };
+
+      // Incluir scanners se solicitado
+      if (include_scanners) {
+        const scanners = await prisma.scanners.findMany({
+          where: { safekeeping_id: id },
+          select: {
+            id: true,
+            name: true,
+            mac_address: true,
+            status: true,
+            last_scan: true,
+          },
+          orderBy: { name: "asc" },
+        });
+
+        result.scanners = scanners.map((scanner) => ({
+          id: scanner.id,
+          name: scanner.name,
+          mac_address: scanner.mac_address,
+          status: scanner.status?.toUpperCase() || "OFFLINE", // garantir UPPERCASE
+          last_scan: scanner.last_scan,
+          antenna_id: null, // campo não existe no schema atual
+          location: null, // campo não existe no schema atual
+        }));
+      }
+
+      // Incluir items/evidências se solicitado
+      if (include_items) {
+        const skip = (items_page - 1) * items_per_page;
+        const presenceThreshold = new Date(
+          Date.now() - presence_threshold_minutes * 60 * 1000
+        );
+
+        // Buscar evidências com paginação
+        const [evidences, totalEvidences] = await Promise.all([
+          prisma.evidences.findMany({
+            where: { safekeeping_id: id },
+            include: {
+              tags: {
+                include: {
+                  scans: {
+                    take: 1,
+                    orderBy: { created_at: "desc" },
+                    include: {
+                      scanners: {
+                        select: { id: true, name: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            skip,
+            take: items_per_page,
+            orderBy: { name: "asc" },
+          }),
+          prisma.evidences.count({
+            where: { safekeeping_id: id },
+          }),
+        ]);
+
+        const items = evidences.map((evidence) => {
+          const lastScan = evidence.tags?.scans?.[0];
+          const lastSeenAt = lastScan?.created_at || null;
+          const isPresent = lastSeenAt
+            ? lastSeenAt >= presenceThreshold
+            : false;
+
+          return {
+            id: evidence.id,
+            tag_id: evidence.tags?.tag_id || null,
+            name: evidence.name,
+            description: evidence.description,
+            last_seen_at: lastSeenAt,
+            last_seen_by_scanner_id: lastScan?.scanners?.id || null,
+            present: isPresent,
+            metadata: {
+              status: evidence.status,
+              registered_by: null, // simplificado por ora
+            },
+          };
+        });
+
+        // Contagem de presença
+        const totalPresent = items.filter((i) => i.present).length;
+        const totalAbsent = items.length - totalPresent;
+
+        result.items = {
+          data: items,
+          meta: {
+            total: totalEvidences,
+            page: items_page,
+            per_page: items_per_page,
+            total_pages: Math.ceil(totalEvidences / items_per_page),
+            total_present: totalPresent,
+            total_absent: totalAbsent,
+          },
+        };
+      }
+
+      return result;
+    } catch (error: any) {
+      throw new Error(`Erro ao obter detalhes da custódia: ${error.message}`);
+    }
+  }
+
+  // Obter custódia por ID (método original mantido para compatibilidade)
   async getSafekeepingById(id: string) {
     try {
       const safekeeping = await prisma.safekeepings.findUnique({

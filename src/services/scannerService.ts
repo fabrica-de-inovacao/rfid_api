@@ -147,9 +147,10 @@ export class ScannerService {
             tag_uid: tagUid,
             scanner: scanner.name,
             message: "Tag não está registrada ou não vinculada a evidência",
-            recommendation: "Registre a evidência e vincule a tag via /tags/link-evidence"
+            recommendation:
+              "Registre a evidência e vincule a tag via /tags/link-evidence",
           });
-          
+
           results.push({
             tag_uid: tagUid,
             evidence: null,

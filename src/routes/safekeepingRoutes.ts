@@ -194,6 +194,89 @@ router.get(
 
 /**
  * @swagger
+ * /safekeepings/{id}/details:
+ *   get:
+ *     tags: [Custódias]
+ *     summary: Obtém detalhes completos de uma custódia com opções avançadas
+ *     description: |
+ *       Retorna detalhes completos de uma custódia específica com opções para incluir
+ *       scanners, itens paginados e cálculo de presença baseado em threshold configurável.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID da custódia
+ *       - in: query
+ *         name: include_items
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Incluir lista de itens na resposta
+ *       - in: query
+ *         name: include_scanners
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Incluir lista de scanners na resposta
+ *       - in: query
+ *         name: items_page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Página para paginação de itens (só funciona se include_items=true)
+ *       - in: query
+ *         name: items_per_page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 50
+ *         description: Itens por página (só funciona se include_items=true)
+ *       - in: query
+ *         name: presence_threshold_minutes
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 60
+ *         description: Threshold em minutos para considerar um item como presente
+ *     responses:
+ *       200:
+ *         description: Detalhes completos da custódia
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/SafekeepingDetailsResponse'
+ *       400:
+ *         description: Parâmetros inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "items_per_page deve estar entre 1 e 100"
+ *       401:
+ *         description: Não autorizado
+ *       404:
+ *         description: Custódia não encontrada
+ *       500:
+ *         description: Erro interno do servidor
+ *
  * /safekeepings/{id}:
  *   get:
  *     tags: [Custódias]
@@ -221,6 +304,14 @@ router.get(
  *       404:
  *         description: Custódia não encontrada
  */
+// GET /api/v1/safekeepings/:id/details - Obter detalhes completos da custódia com opções avançadas
+router.get(
+  "/:id/details",
+  authenticateToken,
+  validateRequest({ params: uuidParamSchema }),
+  safekeepingController.getSafekeepingDetails.bind(safekeepingController)
+);
+
 // GET /api/v1/safekeepings/:id - Obter custódia por ID
 router.get(
   "/:id",

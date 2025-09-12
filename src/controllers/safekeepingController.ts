@@ -192,6 +192,88 @@ export class SafekeepingController {
   }
 
   /**
+   * Obter detalhes completos de uma custódia com opções avançadas
+   */
+  async getSafekeepingDetails(req: Request, res: Response) {
+    try {
+      const { id } = uuidParamSchema.parse(req.params);
+
+      // Parse query parameters
+      const include_items = req.query.include_items === "true";
+      const include_scanners = req.query.include_scanners === "true";
+      const items_page = parseInt(req.query.items_page as string) || 1;
+      const items_per_page = parseInt(req.query.items_per_page as string) || 50;
+      const presence_threshold_minutes =
+        parseInt(req.query.presence_threshold_minutes as string) || 60;
+
+      // Validações
+      if (items_page < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "items_page deve ser maior que 0",
+        });
+      }
+
+      if (items_per_page < 1 || items_per_page > 100) {
+        return res.status(400).json({
+          success: false,
+          message: "items_per_page deve estar entre 1 e 100",
+        });
+      }
+
+      if (presence_threshold_minutes < 1) {
+        return res.status(400).json({
+          success: false,
+          message: "presence_threshold_minutes deve ser maior que 0",
+        });
+      }
+
+      const safekeeping = await safekeepingService.getSafekeepingDetailsById(
+        id,
+        {
+          include_items,
+          include_scanners,
+          items_page,
+          items_per_page,
+          presence_threshold_minutes,
+        }
+      );
+
+      return res.json({
+        success: true,
+        data: safekeeping,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: "Parâmetros inválidos",
+          errors: error.errors.map((err) => ({
+            field: err.path.join("."),
+            message: err.message,
+          })),
+        });
+      }
+
+      if (error.message.includes("não encontrada")) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      console.error(
+        "[SafekeepingController] Erro ao obter detalhes da custódia:",
+        error
+      );
+      return res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor",
+      });
+    }
+  }
+
+  /**
    * @swagger
    * /api/v1/safekeepings/{id}:
    *   put:
