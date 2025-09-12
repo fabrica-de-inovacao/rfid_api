@@ -12,9 +12,73 @@ export class ScannerController {
 
   processScannerReport = async (req: Request, res: Response): Promise<void> => {
     try {
+      // 🔍 LOG: Requisição recebida no endpoint /scans/report
+      console.log("📡 [SCANNER ENDPOINT] Requisição recebida:", {
+        timestamp: new Date().toISOString(),
+        ip: req.ip || req.connection.remoteAddress,
+        userAgent: req.get("User-Agent"),
+        contentLength: req.get("Content-Length"),
+        bodyType: Array.isArray(req.body) ? "ESP32_ARRAY" : "STANDARD_OBJECT",
+        bodySize: JSON.stringify(req.body).length,
+        headers: {
+          "x-api-key": req.get("X-API-Key") ? "***PRESENTE***" : "AUSENTE",
+          "content-type": req.get("Content-Type"),
+        },
+      });
+
+      // 🔍 LOG: Dados recebidos (estrutura)
+      if (Array.isArray(req.body)) {
+        console.log("📡 [SCANNER DATA] Formato ESP32 detectado:", {
+          totalReadings: req.body.length,
+          firstReading: req.body[0]
+            ? {
+                mac: req.body[0].reading_reader_mac,
+                ip: req.body[0].reading_reader_ip,
+                name: req.body[0].reading_reader_name,
+                epc: req.body[0].reading_epc_hex,
+              }
+            : null,
+          uniqueMACs: [...new Set(req.body.map((r) => r.reading_reader_mac))],
+          uniqueEPCs: [...new Set(req.body.map((r) => r.reading_epc_hex))],
+        });
+      } else {
+        console.log("📡 [SCANNER DATA] Formato padrão detectado:", {
+          mac: req.body.mac_address,
+          ip: req.body.reader_ip,
+          name: req.body.reader_name,
+          tagsCount: req.body.tags?.length || 0,
+          tags: req.body.tags,
+        });
+      }
+
       const scanResult = await this.scannerService.processScannerReport(
         req.body
       );
+
+      // 🔍 LOG: Resultado do processamento
+      console.log("✅ [SCAN RESULT] Processamento concluído:", {
+        timestamp: new Date().toISOString(),
+        scanner: {
+          name: scanResult.scanner?.name,
+          status: scanResult.scanner?.status,
+          safekeeping:
+            typeof scanResult.scanner?.safekeeping === "string"
+              ? scanResult.scanner.safekeeping
+              : scanResult.scanner?.safekeeping || null,
+        },
+        tagsProcessed: scanResult.tags_processed?.length || 0,
+        pending: scanResult.pending || false,
+        alerts:
+          scanResult.tags_processed?.filter((tag) => tag.alert)?.length || 0,
+        processedTags:
+          scanResult.tags_processed?.map((tag) => ({
+            tagUid: tag.tag_uid,
+            evidenceId: tag.evidence?.id || null,
+            evidenceName: tag.evidence?.name || null,
+            alert: tag.alert || false,
+            scannerName: tag.scanner?.name || "Unknown",
+          })) || [],
+      });
 
       // Notificar clientes WebSocket sobre os resultados do scan
       this.websocketService.notifyEvidenceScan(scanResult);
@@ -22,6 +86,18 @@ export class ScannerController {
       // Verificar se há alertas (provas fora da custódia correta)
       const alerts = scanResult.tags_processed.filter((tag) => tag.alert);
       if (alerts.length > 0) {
+        console.log("🚨 [ALERT] Alertas detectados:", {
+          count: alerts.length,
+          alerts: alerts.map((alert) => ({
+            tagUid: alert.tag_uid,
+            evidenceId: alert.evidence?.id || null,
+            evidenceName: alert.evidence?.name || null,
+            evidenceStatus: alert.evidence?.status || null,
+            currentSafekeeping: alert.evidence?.safekeeping || null,
+            scannerSafekeeping: alert.scanner?.safekeeping || null,
+          })),
+        });
+
         this.websocketService.broadcast({
           type: "evidence_scan",
           data: {
@@ -33,16 +109,33 @@ export class ScannerController {
         });
       }
 
+      console.log("📤 [RESPONSE] Enviando status 204 (No Content)");
       res.status(204).send();
     } catch (error) {
+      // 🔍 LOG: Erro no processamento
+      console.error("❌ [SCANNER ERROR] Erro ao processar requisição:", {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+        stack: error instanceof Error ? error.stack : null,
+        requestData: {
+          bodyType: Array.isArray(req.body) ? "ESP32_ARRAY" : "STANDARD_OBJECT",
+          bodySize: JSON.stringify(req.body).length,
+          ip: req.ip || req.connection.remoteAddress,
+        },
+      });
+
       if (
         error instanceof Error &&
         error.message === "Scanner não encontrado"
       ) {
+        console.log(
+          "📤 [RESPONSE] Enviando status 404 (Scanner não encontrado)"
+        );
         res.status(404).json({ message: error.message });
         return;
       }
 
+      console.log("📤 [RESPONSE] Enviando status 400 (Bad Request)");
       res.status(400).json({
         message:
           error instanceof Error
