@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ScannerController } from "../controllers/scannerController";
 import { validateRequest } from "../middleware/validation";
 import { validateHardwareApiKey } from "../middleware/hardware";
+import { convertESP32Format } from "../middleware/esp32Converter";
 import { authenticateToken } from "../middleware/auth";
 import {
   scannerReportSchema,
@@ -65,6 +66,7 @@ export const setScannerController = (controller: ScannerController) => {
 router.post(
   "/report",
   validateHardwareApiKey,
+  convertESP32Format,
   validateRequest({ body: scannerReportSchema }),
   (req, res) => scannerController.processScannerReport(req, res)
 );
