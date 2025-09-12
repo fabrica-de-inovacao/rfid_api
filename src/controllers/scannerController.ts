@@ -12,11 +12,61 @@ export class ScannerController {
 
   processScannerReport = async (req: Request, res: Response): Promise<void> => {
     try {
-      console.log("=== DEBUG SCANNER REPORT ===");
-      console.log("Body recebido:", JSON.stringify(req.body, null, 2));
-      console.log("MAC Address recebido:", req.body.mac_address);
-      console.log("Tags/Tag_reads:", req.body.tags || req.body.tag_reads);
-      console.log("============================");
+      console.log("\n🔍 ============= SCANNER REPORT DEBUG =============");
+      console.log("📅 Timestamp:", new Date().toISOString());
+      console.log("🌐 Request URL:", req.url);
+      console.log("📡 Request Method:", req.method);
+      console.log("📋 Headers:", JSON.stringify(req.headers, null, 2));
+      console.log("\n📦 RAW BODY:");
+      console.log("   Type:", typeof req.body);
+      console.log("   Content:", JSON.stringify(req.body, null, 2));
+      console.log("   Body Size:", JSON.stringify(req.body).length, "bytes");
+
+      console.log("\n🔍 FIELD ANALYSIS:");
+      console.log(
+        "   mac_address:",
+        req.body.mac_address,
+        "(type:",
+        typeof req.body.mac_address,
+        ")"
+      );
+      console.log(
+        "   tags:",
+        req.body.tags,
+        "(type:",
+        typeof req.body.tags,
+        ")"
+      );
+      console.log(
+        "   tag_reads:",
+        req.body.tag_reads,
+        "(type:",
+        typeof req.body.tag_reads,
+        ")"
+      );
+
+      console.log("\n🔬 OBJECT KEYS:");
+      console.log("   Available keys:", Object.keys(req.body || {}));
+
+      console.log("\n🎯 MAC ADDRESS VALIDATION:");
+      const macAddress = req.body.mac_address;
+      if (macAddress) {
+        console.log("   ✅ MAC Address found:", macAddress);
+        console.log("   📏 Length:", macAddress.length);
+        console.log(
+          "   🔤 Format check:",
+          /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/.test(macAddress)
+        );
+      } else {
+        console.log("   ❌ MAC Address NOT found or empty!");
+        console.log("   🔍 Checking alternative fields...");
+        console.log("   - mac:", req.body.mac);
+        console.log("   - macAddress:", req.body.macAddress);
+        console.log("   - MAC_ADDRESS:", req.body.MAC_ADDRESS);
+        console.log("   - device_id:", req.body.device_id);
+        console.log("   - scanner_id:", req.body.scanner_id);
+      }
+      console.log("================================================\n");
 
       const scanResult = await this.scannerService.processScannerReport(
         req.body

@@ -25,15 +25,38 @@ export interface PendingScannerData {
 
 export class ScannerService {
   async processScannerReport(reportData: ScannerReportData) {
+    console.log("\n🔧 ============= SCANNER SERVICE DEBUG =============");
+    console.log("📦 Received reportData:", JSON.stringify(reportData, null, 2));
+
     const { mac_address } = reportData;
+    console.log("🎯 Extracted mac_address:", mac_address);
+    console.log("   Type:", typeof mac_address);
+    console.log("   Value:", mac_address);
+    console.log("   Is truthy:", !!mac_address);
+    console.log("   Length:", mac_address?.length);
+
+    if (!mac_address) {
+      console.log("❌ CRITICAL ERROR: mac_address is missing or empty!");
+      console.log(
+        "   Available fields in reportData:",
+        Object.keys(reportData)
+      );
+      throw new Error("MAC address é obrigatório");
+    }
+
+    const normalizedMac = mac_address.toUpperCase();
+    console.log("🔄 Normalized MAC:", normalizedMac);
+    console.log("==================================================\n");
 
     // Verificar se o scanner existe
     let scanner = await db.scanners.findUnique({
-      where: { mac_address: mac_address.toUpperCase() },
+      where: { mac_address: normalizedMac },
       include: {
         safekeepings: true,
       },
     });
+
+    console.log("🔍 Scanner lookup result:", scanner ? "FOUND" : "NOT FOUND");
 
     if (!scanner) {
       // Auto-descoberta: Scanner desconhecido - registrar como pendente
@@ -473,11 +496,14 @@ export class ScannerService {
    * Registrar scanner desconhecido como pendente
    */
   async registerPendingScanner(mac_address: string) {
-    console.log(
-      `[ScannerService] Registrando scanner pendente: ${mac_address}`
-    );
+    console.log("\n🚨 ========== REGISTERING PENDING SCANNER ==========");
+    console.log(`📥 Input mac_address: "${mac_address}"`);
+    console.log(`   Type: ${typeof mac_address}`);
+    console.log(`   Length: ${mac_address?.length}`);
+    console.log(`   Is valid: ${!!mac_address}`);
 
     const macUpper = mac_address.toUpperCase();
+    console.log(`🔄 Normalized MAC: "${macUpper}"`);
 
     console.log(`🔍 SCANNER DESCONHECIDO DETECTADO:`);
     console.log(`   MAC Address: ${macUpper}`);
@@ -528,9 +554,20 @@ export class ScannerService {
         `✅ Novo scanner pendente criado: ${suggestedName} (${mac_address})`
       );
       console.log(`💡 Aguardando aprovação do administrador`);
+      console.log(
+        `📊 Scanner pendente detalhes:`,
+        JSON.stringify(pendingScanner, null, 2)
+      );
+      console.log("==================================================\n");
       return pendingScanner;
     } catch (error) {
       console.error(`❌ Erro ao registrar scanner pendente:`, error);
+      console.error(`❌ Erro detalhes:`, error);
+      console.error(
+        `❌ Stack trace:`,
+        error instanceof Error ? error.stack : "No stack"
+      );
+      console.log("==================================================\n");
 
       // Retornar mock em caso de erro para não quebrar o fluxo
       return {
