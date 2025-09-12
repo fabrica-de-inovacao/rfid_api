@@ -179,7 +179,6 @@ export class ScannerService {
   }
 
   async getScannerStatus() {
-    console.log("[ScannerService] Buscando scanners...");
     const scanners = await db.scanners.findMany({
       include: {
         safekeepings: {
@@ -194,10 +193,6 @@ export class ScannerService {
       },
     });
 
-    console.log(
-      `[ScannerService] Encontrados ${scanners.length} scanners no banco`
-    );
-
     const result = scanners.map((scanner: any) => ({
       id: scanner.id,
       name: scanner.name,
@@ -207,16 +202,10 @@ export class ScannerService {
       safekeeping: scanner.safekeepings,
     }));
 
-    console.log("[ScannerService] Resultado formatado:", result);
     return result;
   }
 
   async getRecentScans(limit = 100, options?: { include_pending?: boolean }) {
-    console.log(
-      `[ScannerService] Buscando scans recentes com limite: ${limit}, opções:`,
-      options
-    );
-
     const scans = await db.scans.findMany({
       take: limit,
       orderBy: {
@@ -237,8 +226,6 @@ export class ScannerService {
         },
       },
     });
-
-    console.log(`[ScannerService] Encontrados ${scans.length} scans no banco`);
 
     let result = scans.map((scan: any) => ({
       id: scan.id,
@@ -270,9 +257,6 @@ export class ScannerService {
         }));
 
         result = [...pendingScansInfo, ...result];
-        console.log(
-          `[ScannerService] Incluídos ${pendingScanners.length} scanners pendentes`
-        );
       } catch (error) {
         console.error(
           `[ScannerService] Erro ao buscar scanners pendentes:`,
@@ -281,7 +265,6 @@ export class ScannerService {
       }
     }
 
-    console.log("[ScannerService] Resultado formatado:", result);
     return result;
   }
 
@@ -291,8 +274,6 @@ export class ScannerService {
    * Criar um novo scanner
    */
   async createScanner(data: CreateScannerData) {
-    console.log(`[ScannerService] Criando scanner: ${data.name}`);
-
     // Verificar se MAC address já existe
     const existingScanner = await db.scanners.findUnique({
       where: { mac_address: data.mac_address },
@@ -337,7 +318,6 @@ export class ScannerService {
       },
     });
 
-    console.log(`[ScannerService] Scanner criado: ${scanner.id}`);
     return scanner;
   }
 
@@ -345,8 +325,6 @@ export class ScannerService {
    * Atualizar um scanner existente
    */
   async updateScanner(id: string, data: UpdateScannerData) {
-    console.log(`[ScannerService] Atualizando scanner: ${id}`);
-
     // Verificar se scanner existe
     const existingScanner = await db.scanners.findUnique({
       where: { id },
@@ -388,7 +366,6 @@ export class ScannerService {
       },
     });
 
-    console.log(`[ScannerService] Scanner atualizado: ${scanner.id}`);
     return scanner;
   }
 
@@ -396,8 +373,6 @@ export class ScannerService {
    * Deletar um scanner
    */
   async deleteScanner(id: string) {
-    console.log(`[ScannerService] Deletando scanner: ${id}`);
-
     // Verificar se scanner existe
     const existingScanner = await db.scanners.findUnique({
       where: { id },
@@ -421,7 +396,6 @@ export class ScannerService {
       where: { id },
     });
 
-    console.log(`[ScannerService] Scanner deletado: ${id}`);
     return { success: true, message: "Scanner deletado com sucesso" };
   }
 
@@ -429,8 +403,6 @@ export class ScannerService {
    * Obter detalhes de um scanner específico
    */
   async getScannerById(id: string) {
-    console.log(`[ScannerService] Buscando scanner: ${id}`);
-
     const scanner = await db.scanners.findUnique({
       where: { id },
       include: {

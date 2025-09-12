@@ -148,10 +148,6 @@ export class ScannerController {
   getScannerStatus = async (req: Request, res: Response): Promise<void> => {
     try {
       const scanners = await this.scannerService.getScannerStatus();
-      console.log(
-        `[getScannerStatus] Retornando ${scanners.length} scanners:`,
-        scanners
-      );
       res.status(200).json(scanners);
     } catch (error) {
       console.error("[getScannerStatus] Erro:", error);
@@ -169,13 +165,9 @@ export class ScannerController {
         : undefined;
       const includePending = req.query.include_pending === "true";
 
-      console.log(
-        `[getRecentScans] Buscando scans com limit: ${limit}, include_pending: ${includePending}`
-      );
       const scans = await this.scannerService.getRecentScans(limit, {
         include_pending: includePending,
       });
-      console.log(`[getRecentScans] Retornando ${scans.length} scans:`, scans);
       res.status(200).json(scans);
     } catch (error) {
       console.error("[getRecentScans] Erro:", error);
