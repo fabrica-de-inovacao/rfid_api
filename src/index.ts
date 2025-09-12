@@ -127,6 +127,30 @@ class App {
     this.app.use(express.json({ limit: "10mb" }));
     this.app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+    // 🔍 Middleware específico para detectar requisições do scanner
+    this.app.use((req, res, next) => {
+      // Detectar se é uma requisição para o endpoint do scanner
+      if (
+        req.path.includes("/scans/report") ||
+        req.path.includes("/scans/test") ||
+        req.path.includes("/scans/debug")
+      ) {
+        console.log("📡 [SCANNER REQUEST] Detectada requisição do scanner:", {
+          timestamp: new Date().toISOString(),
+          method: req.method,
+          path: req.path,
+          ip: req.ip,
+          userAgent: req.get("User-Agent"),
+          contentType: req.get("Content-Type"),
+          authorization: req.get("Authorization") ? "PRESENTE" : "AUSENTE",
+          xForwardedFor: req.get("X-Forwarded-For"),
+          xForwardedProto: req.get("X-Forwarded-Proto"),
+          host: req.get("Host"),
+        });
+      }
+      next();
+    });
+
     // Middleware de logging melhorado
     if (config.nodeEnv === "development") {
       this.app.use((req, res, next) => {
@@ -171,6 +195,66 @@ class App {
         uptime: process.uptime(),
         mqtt_connected: this.mqttService.isClientConnected(),
         websocket_clients: this.websocketService.getConnectedClientsCount(),
+      });
+    });
+
+    // 🔍 DEBUG: Endpoint específico para teste de conectividade do scanner
+    this.app.all("/api/v1/scans/debug", (req, res) => {
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        url: req.url,
+        originalUrl: req.originalUrl,
+        ip: req.ip,
+        ips: req.ips,
+        headers: req.headers,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        protocol: req.protocol,
+        secure: req.secure,
+        hostname: req.hostname,
+        userAgent: req.get("User-Agent"),
+        contentType: req.get("Content-Type"),
+        contentLength: req.get("Content-Length"),
+        forwarded: {
+          proto: req.get("X-Forwarded-Proto"),
+          host: req.get("X-Forwarded-Host"),
+          for: req.get("X-Forwarded-For"),
+        },
+      };
+
+      console.log("🔍 [DEBUG ENDPOINT] Scanner connectivity test:", debugInfo);
+
+      res.status(200).json({
+        success: true,
+        message: "DEBUG: Scanner connectivity test successful",
+        server_info: {
+          status: "ONLINE",
+          port: config.port,
+          environment: process.env.NODE_ENV || "development",
+        },
+        request_info: debugInfo,
+      });
+    });
+
+    // 🔍 DEBUG: Endpoint de teste simples sem autenticação
+    this.app.post("/api/v1/scans/test", (req, res) => {
+      const testInfo = {
+        timestamp: new Date().toISOString(),
+        received_data: req.body,
+        headers: req.headers,
+        ip: req.ip,
+        method: req.method,
+        url: req.url,
+      };
+
+      console.log("🧪 [TEST ENDPOINT] Scanner test data received:", testInfo);
+
+      res.status(200).json({
+        success: true,
+        message: "TEST: Data received successfully",
+        echo: testInfo,
       });
     });
 
