@@ -6,12 +6,13 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "API de Custódia de Provas RFID v6.0 - Sistema Completo",
+      title: "API de Custódia de Provas RFID v7.0 - Sistema Completo com ESP32",
       description: `
         API RESTful avançada para gestão e rastreamento de provas criminais com tecnologia RFID.
         
         ### 🚀 Funcionalidades Principais:
         - **Auto-descoberta de Scanners**: Detecta automaticamente novos scanners na rede
+        - **Suporte ESP32**: Conversão automática de formato de dados ESP32
         - **Gestão Completa CRUD**: Scanners, Provas, Custódias e Utilizadores
         - **Monitoramento em Tempo Real**: WebSocket para atualizações instantâneas
         - **Sistema de Aprovação**: Scanners pendentes para aprovação administrativa
@@ -58,7 +59,7 @@ const options: swaggerJSDoc.Options = {
         **Uso:** Header \`Authorization: Bearer {accessToken}\`  
         **Renovação:** POST /auth/refresh → Novo accessToken
       `,
-      version: "6.0.0",
+      version: "7.0.0",
       contact: {
         name: "Suporte Técnico",
         email: "suporte@fabricadeinovacao.com",
@@ -140,6 +141,12 @@ const options: swaggerJSDoc.Options = {
           type: "http",
           scheme: "bearer",
           bearerFormat: "JWT",
+        },
+        ApiKeyAuth: {
+          type: "apiKey",
+          in: "header",
+          name: "X-API-Key",
+          description: "Chave de API para autenticação de hardware ESP32",
         },
       },
       schemas: {
@@ -868,6 +875,287 @@ const options: swaggerJSDoc.Options = {
             message: {
               type: "string",
               example: "Scanner registrado como pendente para aprovação",
+            },
+          },
+        },
+        ScannerReportESP32: {
+          type: "array",
+          description: "Formato de dados enviado pelo ESP32",
+          items: {
+            type: "object",
+            properties: {
+              reading_reader_ip: {
+                type: "string",
+                example: "192.168.2.100",
+                description: "IP do scanner ESP32",
+              },
+              reading_epc_hex: {
+                type: "string",
+                example: "E2801191A50300653CF0F0D2",
+                description: "Código EPC da tag RFID em hexadecimal",
+              },
+              reading_reader_mac: {
+                type: "string",
+                example: "54:43:B2:95:0C:50",
+                description: "MAC address do scanner",
+              },
+              reading_company_id: {
+                type: "string",
+                example: "",
+                description: "ID da empresa (opcional)",
+              },
+              reading_antenna: {
+                type: "string",
+                example: "1",
+                description: "Número da antena",
+              },
+              reading_movement_type: {
+                type: "string",
+                example: "1",
+                description: "Tipo de movimento da tag",
+              },
+              reading_created_at: {
+                type: "string",
+                example: "2025-09-12 10:00:00",
+                description: "Timestamp da leitura",
+              },
+              reading_reader_name: {
+                type: "string",
+                example: "ESP32-Scanner",
+                description: "Nome do scanner ESP32",
+              },
+              reading_rpm: {
+                type: "string",
+                example: "0",
+                description: "RPM do scanner (se aplicável)",
+              },
+            },
+          },
+        },
+        ScannerReportStandard: {
+          type: "object",
+          description: "Formato padrão da API (convertido do ESP32)",
+          properties: {
+            mac_address: {
+              type: "string",
+              example: "54:43:B2:95:0C:50",
+              description: "MAC address do scanner",
+            },
+            tags: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+              example: ["E2801191A50300653CF0F0D2", "E2801191A50300653CF11532"],
+              description: "Lista de tags RFID detectadas",
+            },
+            reader_ip: {
+              type: "string",
+              example: "192.168.2.100",
+              description: "IP do scanner",
+            },
+            reader_name: {
+              type: "string",
+              example: "ESP32-Scanner",
+              description: "Nome do scanner",
+            },
+            readings_count: {
+              type: "integer",
+              example: 2,
+              description: "Número total de leituras",
+            },
+            unique_tags_count: {
+              type: "integer",
+              example: 2,
+              description: "Número de tags únicas detectadas",
+            },
+          },
+        },
+        ScanResult: {
+          type: "object",
+          description: "Resultado do processamento de scan",
+          properties: {
+            scanner: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  example: "Scanner Sala 101",
+                },
+                safekeeping: {
+                  type: "object",
+                  nullable: true,
+                  properties: {
+                    name: {
+                      type: "string",
+                      example: "Depósito Central",
+                    },
+                  },
+                },
+                status: {
+                  type: "string",
+                  example: "ativo",
+                },
+              },
+            },
+            tags_processed: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  tag_id: {
+                    type: "string",
+                    example: "E2801191A50300653CF0F0D2",
+                  },
+                  evidence_id: {
+                    type: "string",
+                    format: "uuid",
+                    example: "123e4567-e89b-12d3-a456-426614174000",
+                  },
+                  alert: {
+                    type: "boolean",
+                    example: false,
+                  },
+                  message: {
+                    type: "string",
+                    example: "Tag processada com sucesso",
+                  },
+                },
+              },
+            },
+            timestamp: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:00:00.000Z",
+            },
+            pending: {
+              type: "boolean",
+              example: false,
+            },
+          },
+        },
+        Scanner: {
+          type: "object",
+          description: "Schema do scanner registrado",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            name: {
+              type: "string",
+              example: "Scanner Sala 205",
+            },
+            mac_address: {
+              type: "string",
+              example: "54:43:B2:95:0C:50",
+            },
+            status: {
+              type: "string",
+              enum: ["ativo", "inativo", "manutencao"],
+              example: "ativo",
+            },
+            last_scan: {
+              type: "string",
+              format: "date-time",
+              nullable: true,
+              example: "2025-09-12T10:00:00.000Z",
+            },
+            safekeeping_id: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              example: "456e7890-e89b-12d3-a456-426614174001",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:00:00.000Z",
+            },
+          },
+        },
+        PendingScanner: {
+          type: "object",
+          description: "Scanner pendente de aprovação",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            mac_address: {
+              type: "string",
+              example: "54:43:B2:95:0C:50",
+            },
+            suggested_name: {
+              type: "string",
+              example: "Scanner-950C50",
+            },
+            first_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:00:00.000Z",
+            },
+            last_seen: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:30:00.000Z",
+            },
+            scan_count: {
+              type: "integer",
+              example: 5,
+              description: "Número de tentativas de scan",
+            },
+            status: {
+              type: "string",
+              enum: ["pending", "approved", "rejected"],
+              example: "pending",
+            },
+            created_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:00:00.000Z",
+            },
+            updated_at: {
+              type: "string",
+              format: "date-time",
+              example: "2025-09-12T10:30:00.000Z",
+            },
+          },
+        },
+        Success: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              example: true,
+            },
+            message: {
+              type: "string",
+              example: "Operação realizada com sucesso",
+            },
+          },
+        },
+        Error: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              example: false,
+            },
+            message: {
+              type: "string",
+              example: "Erro na operação",
+            },
+            error: {
+              type: "string",
+              example: "Detalhes do erro",
             },
           },
         },

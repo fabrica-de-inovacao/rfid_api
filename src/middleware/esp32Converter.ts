@@ -8,17 +8,12 @@ export const convertESP32Format = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log("\n🔄 ========== ESP32 FORMAT CONVERTER ==========");
-  console.log("📥 Original body:", JSON.stringify(req.body, null, 2));
-
   // Verificar se é o formato do ESP32 (array de readings)
   if (
     Array.isArray(req.body) &&
     req.body.length > 0 &&
     req.body[0].reading_reader_mac
   ) {
-    console.log("🎯 Detectado formato ESP32, convertendo...");
-
     const firstReading = req.body[0];
     const macAddress = firstReading.reading_reader_mac;
 
@@ -31,7 +26,6 @@ export const convertESP32Format = (
     const convertedBody = {
       mac_address: macAddress,
       tags: uniqueEPCs,
-      // Dados adicionais do scanner
       reader_ip: firstReading.reading_reader_ip,
       reader_name: firstReading.reading_reader_name || "",
       readings_count: req.body.length,
@@ -40,19 +34,9 @@ export const convertESP32Format = (
       last_reading_time: req.body[req.body.length - 1]?.reading_created_at,
     };
 
-    console.log("✅ Formato convertido:");
-    console.log("   MAC Address:", macAddress);
-    console.log("   Total readings:", req.body.length);
-    console.log("   Unique EPCs:", uniqueEPCs.length);
-    console.log("   EPCs:", uniqueEPCs);
-
     // Substituir o body
     req.body = convertedBody;
-    console.log("📤 New body:", JSON.stringify(req.body, null, 2));
-  } else {
-    console.log("ℹ️ Formato padrão detectado, mantendo original");
   }
 
-  console.log("==============================================\n");
   next();
 };

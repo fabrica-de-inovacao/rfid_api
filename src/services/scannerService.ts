@@ -25,28 +25,13 @@ export interface PendingScannerData {
 
 export class ScannerService {
   async processScannerReport(reportData: ScannerReportData) {
-    console.log("\n🔧 ============= SCANNER SERVICE DEBUG =============");
-    console.log("📦 Received reportData:", JSON.stringify(reportData, null, 2));
-
     const { mac_address } = reportData;
-    console.log("🎯 Extracted mac_address:", mac_address);
-    console.log("   Type:", typeof mac_address);
-    console.log("   Value:", mac_address);
-    console.log("   Is truthy:", !!mac_address);
-    console.log("   Length:", mac_address?.length);
 
     if (!mac_address) {
-      console.log("❌ CRITICAL ERROR: mac_address is missing or empty!");
-      console.log(
-        "   Available fields in reportData:",
-        Object.keys(reportData)
-      );
       throw new Error("MAC address é obrigatório");
     }
 
     const normalizedMac = mac_address.toUpperCase();
-    console.log("🔄 Normalized MAC:", normalizedMac);
-    console.log("==================================================\n");
 
     // Verificar se o scanner existe
     let scanner = await db.scanners.findUnique({
@@ -56,13 +41,8 @@ export class ScannerService {
       },
     });
 
-    console.log("🔍 Scanner lookup result:", scanner ? "FOUND" : "NOT FOUND");
-
     if (!scanner) {
       // Auto-descoberta: Scanner desconhecido - registrar como pendente
-      console.log(
-        `[ScannerService] Scanner desconhecido detectado: ${mac_address}`
-      );
       await this.registerPendingScanner(mac_address);
 
       // Retornar resposta indicando scanner pendente mas processando dados
@@ -94,15 +74,9 @@ export class ScannerService {
     if (reportData.tag_reads) {
       // Formato novo com tag_reads
       tagsToProcess = reportData.tag_reads.map((read) => read.tag_id);
-      console.log(
-        `Processando ${reportData.tag_reads.length} tag reads do formato novo`
-      );
     } else if (reportData.tags) {
-      // Formato antigo com tags
+      // Formato convertido pelo middleware ESP32 ou formato padrão
       tagsToProcess = reportData.tags;
-      console.log(
-        `Processando ${reportData.tags.length} tags do formato antigo`
-      );
     }
 
     // Processar cada tag detectada
@@ -620,7 +594,25 @@ export class ScannerService {
       throw new Error("Scanner pendente não encontrado");
     }
 
-    // Criar scanner oficial
+    // Verificar se já existe um scanner com o mesmo MAC address
+    const existingScanner = await db.scanners.findUnique({
+      where: { mac_address: pendingScanner.mac_address },
+    });
+
+    if (existingScanner) {
+      // Se já existe, apenas marcar o pendente como aprovado e retornar o existente
+      await db.pending_scanners.update({
+        where: { id: pendingId },
+        data: { status: "approved" },
+      });
+
+      console.log(
+        `[ScannerService] Scanner já existe, marcando pendente como aprovado`
+      );
+      return existingScanner;
+    }
+
+    // Criar scanner oficial se não existir
     const scanner = await db.scanners.create({
       data: {
         name: data.name,
@@ -636,6 +628,9 @@ export class ScannerService {
       data: { status: "approved" },
     });
 
+    console.log(
+      `[ScannerService] Novo scanner criado e aprovado: ${scanner.name}`
+    );
     return scanner;
   }
 
