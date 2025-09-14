@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    container_name: rfid_api
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    networks:
+      - rfid_network
+
+networks:
+  rfid_network:
+    driver: bridge

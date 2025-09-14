@@ -1,3 +1,8 @@
+import {
+  scanners as ScannerModel,
+  pending_scanners,
+  scans,
+} from "@prisma/client";
 import { db } from "../config/database";
 import { ScannerReportData } from "../types";
 
@@ -251,18 +256,20 @@ export class ScannerService {
           orderBy: { last_seen: "desc" },
         });
 
-        const pendingScansInfo = pendingScanners.map((pending) => ({
-          id: `pending-${pending.id}`,
-          scanner: {
-            name: pending.suggested_name,
-            mac_address: pending.mac_address,
-            status: "pending",
-          },
-          tag: null,
-          created_at: pending.last_seen,
-          is_pending: true,
-          scan_count: pending.scan_count,
-        }));
+        const pendingScansInfo = pendingScanners.map(
+          (pending: pending_scanners) => ({
+            id: `pending-${pending.id}`,
+            scanner: {
+              name: pending.suggested_name,
+              mac_address: pending.mac_address,
+              status: "pending",
+            },
+            tag: null,
+            created_at: pending.last_seen,
+            is_pending: true,
+            scan_count: pending.scan_count,
+          })
+        );
 
         result = [...pendingScansInfo, ...result];
       } catch (error) {
@@ -452,11 +459,13 @@ export class ScannerService {
 
     return {
       ...scanner,
-      recent_scans: scanner.scans.map((scan) => ({
-        id: scan.id,
-        tag_id: scan.tags.tag_id,
-        created_at: scan.created_at,
-      })),
+      recent_scans: scanner.scans.map(
+        (scan: scans & { tags: { tag_id: string } }) => ({
+          id: scan.id,
+          tag_id: scan.tags.tag_id,
+          created_at: scan.created_at,
+        })
+      ),
       scans: undefined, // Remover array original
     };
   }
@@ -678,34 +687,40 @@ export class ScannerService {
 
     // Se incluir estatísticas, calcular dados adicionais
     if (filters?.include_stats) {
-      return scanners.map((scanner) => {
-        const scans = (scanner as any).scans || [];
-        const now = new Date();
-        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      return scanners.map(
+        (
+          scanner: ScannerModel & {
+            scans?: { id: string; created_at: Date }[];
+          }
+        ) => {
+          const scans = scanner.scans || [];
+          const now = new Date();
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-        const scansLast24h = scans.filter(
-          (scan: any) => scan.created_at >= oneDayAgo
-        ).length;
-        const scansLastWeek = scans.filter(
-          (scan: any) => scan.created_at >= oneWeekAgo
-        ).length;
+          const scansLast24h = scans.filter(
+            (scan: { created_at: Date }) => scan.created_at >= oneDayAgo
+          ).length;
+          const scansLastWeek = scans.filter(
+            (scan: { created_at: Date }) => scan.created_at >= oneWeekAgo
+          ).length;
 
-        return {
-          ...scanner,
-          stats: {
-            total_scans: scans.length,
-            scans_last_24h: scansLast24h,
-            scans_last_week: scansLastWeek,
-            last_scan_ago: scanner.last_scan
-              ? Math.floor(
-                  (now.getTime() - scanner.last_scan.getTime()) / 1000 / 60
-                )
-              : null, // minutos
-          },
-          scans: undefined, // Remover array original
-        };
-      });
+          return {
+            ...scanner,
+            stats: {
+              total_scans: scans.length,
+              scans_last_24h: scansLast24h,
+              scans_last_week: scansLastWeek,
+              last_scan_ago: scanner.last_scan
+                ? Math.floor(
+                    (now.getTime() - scanner.last_scan.getTime()) / 1000 / 60
+                  )
+                : null, // minutos
+            },
+            scans: undefined, // Remover array original
+          };
+        }
+      );
     }
 
     return scanners;

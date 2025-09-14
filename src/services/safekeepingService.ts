@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, evidences, tags, scans } from "@prisma/client";
 import { CreateSafekeepingData, UpdateSafekeepingData } from "../types";
 
 const prisma = new PrismaClient();
@@ -169,15 +169,23 @@ export class SafekeepingService {
           orderBy: { name: "asc" },
         });
 
-        result.scanners = scanners.map((scanner) => ({
-          id: scanner.id,
-          name: scanner.name,
-          mac_address: scanner.mac_address,
-          status: scanner.status?.toUpperCase() || "OFFLINE", // garantir UPPERCASE
-          last_scan: scanner.last_scan,
-          antenna_id: null, // campo não existe no schema atual
-          location: null, // campo não existe no schema atual
-        }));
+        result.scanners = scanners.map(
+          (scanner: {
+            id: string;
+            name: string;
+            mac_address: string;
+            status: string | null;
+            last_scan: Date | null;
+          }) => ({
+            id: scanner.id,
+            name: scanner.name,
+            mac_address: scanner.mac_address,
+            status: scanner.status?.toUpperCase() || "OFFLINE", // garantir UPPERCASE
+            last_scan: scanner.last_scan,
+            antenna_id: null, // campo não existe no schema atual
+            location: null, // campo não existe no schema atual
+          })
+        );
       }
 
       // Incluir items/evidências se solicitado
@@ -215,30 +223,44 @@ export class SafekeepingService {
           }),
         ]);
 
-        const items = evidences.map((evidence) => {
-          const lastScan = evidence.tags?.scans?.[0];
-          const lastSeenAt = lastScan?.created_at || null;
-          const isPresent = lastSeenAt
-            ? lastSeenAt >= presenceThreshold
-            : false;
+        const items = evidences.map(
+          (
+            evidence: evidences & {
+              tags:
+                | (tags & {
+                    scans: (scans & {
+                      scanners: { id: string; name: string } | null;
+                    })[];
+                  })
+                | null;
+            }
+          ) => {
+            const lastScan = evidence.tags?.scans?.[0];
+            const lastSeenAt = lastScan?.created_at || null;
+            const isPresent = lastSeenAt
+              ? lastSeenAt >= presenceThreshold
+              : false;
 
-          return {
-            id: evidence.id,
-            tag_id: evidence.tags?.tag_id || null,
-            name: evidence.name,
-            description: evidence.description,
-            last_seen_at: lastSeenAt,
-            last_seen_by_scanner_id: lastScan?.scanners?.id || null,
-            present: isPresent,
-            metadata: {
-              status: evidence.status,
-              registered_by: null, // simplificado por ora
-            },
-          };
-        });
+            return {
+              id: evidence.id,
+              tag_id: evidence.tags?.tag_id || null,
+              name: evidence.name,
+              description: evidence.description,
+              last_seen_at: lastSeenAt,
+              last_seen_by_scanner_id: lastScan?.scanners?.id || null,
+              present: isPresent,
+              metadata: {
+                status: evidence.status,
+                registered_by: null, // simplificado por ora
+              },
+            };
+          }
+        );
 
         // Contagem de presença
-        const totalPresent = items.filter((i) => i.present).length;
+        const totalPresent = items.filter(
+          (i: { present: boolean }) => i.present
+        ).length;
         const totalAbsent = items.length - totalPresent;
 
         result.items = {
