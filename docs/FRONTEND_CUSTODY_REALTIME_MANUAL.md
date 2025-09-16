@@ -454,7 +454,7 @@ class CustodyMonitor {
 }
 
 // Uso na tela de custódia
-const monitor = new CustodyMonitor(safekeepingId, "ws://localhost:3001");
+const monitor = new CustodyMonitor(safekeepingId, "ws://189.90.44.226:9001");
 
 // Iniciar quando entrar na tela
 monitor.start(5); // A cada 5 minutos
@@ -626,7 +626,7 @@ window.addEventListener("beforeunload", () => {
 
 ```javascript
 // Conectar ao WebSocket
-const ws = new WebSocket("ws://localhost:3001");
+const ws = new WebSocket("ws://189.90.44.226:9001");
 
 ws.onopen = () => {
   console.log("WebSocket conectado");
@@ -734,7 +734,10 @@ const CustodyRealtimePage = ({ safekeepingId }) => {
   // Iniciar monitoramento
   const startMonitoring = async () => {
     try {
-      const monitor = new CustodyMonitor(safekeepingId, "ws://localhost:3001");
+      const monitor = new CustodyMonitor(
+        safekeepingId,
+        "ws://189.90.44.226:9001"
+      );
       const result = await monitor.start(5); // A cada 5 minutos
       setMonitoring(monitor);
     } catch (error) {

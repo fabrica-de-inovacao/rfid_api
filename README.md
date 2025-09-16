@@ -131,7 +131,7 @@ Authorization: Bearer <seu-token-jwt>
 
 ## 🌐 WebSockets
 
-A API fornece comunicação em tempo real via WebSockets na porta **3001**.
+A API fornece comunicação em tempo real via WebSockets na porta **9001**.
 
 Eventos disponíveis:
 
@@ -213,7 +213,7 @@ yarn prisma:studio       # Interface gráfica da BD
 | `JWT_SECRET`         | Chave secreta para JWT          | -                     |
 | `JWT_REFRESH_SECRET` | Chave para refresh tokens       | -                     |
 | `PORT`               | Porta do servidor               | 3000                  |
-| `WS_PORT`            | Porta do WebSocket              | 3001                  |
+| `WS_PORT`            | Porta do WebSocket              | 9001                  |
 | `HARDWARE_API_KEY`   | Chave para hardware             | -                     |
 | `MQTT_BROKER_URL`    | URL do broker MQTT              | mqtt://localhost:1883 |
 

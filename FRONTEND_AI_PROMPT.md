@@ -235,7 +235,7 @@ const useRecentScans = (limit?: number)
 
 ```typescript
 const useWebSocket = () => {
-  // Conectar com ws://189.90.44.226:9000
+  // Conectar com ws://189.90.44.226:9001
   // Escutar eventos: 'scanner_status', 'new_scan', 'unknown_scanner'
   // Atualizar estado automaticamente
 };
