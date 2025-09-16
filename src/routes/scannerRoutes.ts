@@ -1045,7 +1045,7 @@ router.get("/recent", authenticateToken, (req, res) =>
  *         required: true
  *         schema:
  *           type: string
- *         description: IP da antena (ex: 192.168.2.100)
+ *         description: "IP da antena (ex: 192.168.2.100)"
  *         example: "192.168.2.100"
  *     responses:
  *       200:
@@ -1090,9 +1090,9 @@ router.get("/recent", authenticateToken, (req, res) =>
  *                       enum: [online, offline]
  *                       example: "online"
  *       400:
- *         description: IP da antena não fornecido
+ *         description: "IP da antena não fornecido"
  *       500:
- *         description: Erro ao consultar antena (offline, timeout, etc.)
+ *         description: "Erro ao consultar antena (offline, timeout, etc.)"
  */
 router.get("/antenna/:antennaIP/sdcard", authenticateToken, (req, res) =>
   scannerController.getAntennaSDCardData(req, res)
