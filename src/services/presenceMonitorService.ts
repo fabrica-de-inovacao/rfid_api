@@ -18,10 +18,12 @@ export class PresenceMonitorService {
   public startMonitoring() {
     console.log("🔍 Iniciando monitoramento de presença de tags...");
 
-    // Executar a cada 15 segundos (menos que o timeout de 30s)
+    // Executar no intervalo configurável
+    const interval = config.rfid.presencePollMs;
+    console.log(`⏱️ Intervalo do PresenceMonitor: ${interval}ms`);
     this.intervalId = setInterval(async () => {
       await this.checkAbsentTags();
-    }, 15000);
+    }, interval);
 
     // Executar uma vez imediatamente
     this.checkAbsentTags();

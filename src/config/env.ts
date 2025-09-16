@@ -32,6 +32,8 @@ export const config = {
 
   rfid: {
     // Tempo em segundos para considerar uma tag ausente se não for detectada
-    presenceTimeoutSeconds: Number(process.env.RFID_PRESENCE_TIMEOUT) || 30,
+    presenceTimeoutSeconds: Number(process.env.RFID_PRESENCE_TIMEOUT) || 15,
+    // Intervalo de verificação do monitor de presença em milissegundos
+    presencePollMs: Number(process.env.RFID_PRESENCE_POLL_MS) || 5000,
   },
 };
