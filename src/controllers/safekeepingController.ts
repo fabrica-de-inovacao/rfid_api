@@ -204,7 +204,7 @@ export class SafekeepingController {
       const items_page = parseInt(req.query.items_page as string) || 1;
       const items_per_page = parseInt(req.query.items_per_page as string) || 50;
       const presence_threshold_minutes =
-        parseInt(req.query.presence_threshold_minutes as string) || 60;
+        parseInt(req.query.presence_threshold_minutes as string) || undefined; // Deixar o service usar o valor do .env
 
       // Validações
       if (items_page < 1) {
@@ -221,7 +221,10 @@ export class SafekeepingController {
         });
       }
 
-      if (presence_threshold_minutes < 1) {
+      if (
+        presence_threshold_minutes !== undefined &&
+        presence_threshold_minutes < 1
+      ) {
         return res.status(400).json({
           success: false,
           message: "presence_threshold_minutes deve ser maior que 0",

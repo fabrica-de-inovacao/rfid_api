@@ -1,5 +1,6 @@
 import { PrismaClient, evidences, tags, scans } from "@prisma/client";
 import { CreateSafekeepingData, UpdateSafekeepingData } from "../types";
+import { config } from "../config/env";
 
 const prisma = new PrismaClient();
 
@@ -116,7 +117,7 @@ export class SafekeepingService {
         include_scanners = false,
         items_page = 1,
         items_per_page = 50,
-        presence_threshold_minutes = 60,
+        presence_threshold_minutes = config.rfid.presenceTimeoutSeconds / 60, // Usar o timeout do .env em minutos
       } = options;
 
       // Buscar custódia básica com manager
