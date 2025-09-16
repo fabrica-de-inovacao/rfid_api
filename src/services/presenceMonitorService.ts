@@ -67,6 +67,7 @@ export class PresenceMonitorService {
               id: true,
               tag_id: true,
               scans: {
+                where: { scanner_id: { not: null } },
                 orderBy: {
                   created_at: "desc",
                 },
@@ -116,16 +117,13 @@ export class PresenceMonitorService {
       const lastScan = evidence.tags?.scans?.[0];
       const lastSeenAt = lastScan?.created_at || evidence.created_at;
 
-      // Criar registro especial de ausência (usando schema atual)
-      if (evidence.tags?.id) {
-        await this.prisma.scans.create({
-          data: {
-            scanner_id: null, // Null indica detecção automática de ausência
-            tag_id: evidence.tags.id,
-            created_at: new Date(),
-          },
-        });
-      }
+      // Importante: NÃO criar registros na tabela 'scans' para ausência.
+      // Gravar um 'scan' aqui faria o sistema entender que a tag foi
+      // detectada recentemente, mascarando a ausência e causando
+      // inconsistências no cálculo de presença. Em vez disso, apenas
+      // notificamos via WebSocket. Persistência de ausência deve ser feita
+      // em uma estrutura apropriada (ex.: activity_logs ou uma tabela
+      // específica), não como 'scan'.
 
       // Preparar dados para WebSocket
       const alertData = {

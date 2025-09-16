@@ -109,6 +109,7 @@ export class SafekeepingService {
       items_page?: number;
       items_per_page?: number;
       presence_threshold_minutes?: number;
+      presence_threshold_seconds?: number;
     } = {}
   ) {
     try {
@@ -117,7 +118,8 @@ export class SafekeepingService {
         include_scanners = false,
         items_page = 1,
         items_per_page = 50,
-        presence_threshold_minutes = config.rfid.presenceTimeoutSeconds / 60, // Usar o timeout do .env em minutos
+        presence_threshold_minutes,
+        presence_threshold_seconds,
       } = options;
 
       // Buscar custódia básica com manager
@@ -192,9 +194,14 @@ export class SafekeepingService {
       // Incluir items/evidências se solicitado
       if (include_items) {
         const skip = (items_page - 1) * items_per_page;
-        const presenceThreshold = new Date(
-          Date.now() - presence_threshold_minutes * 60 * 1000
-        );
+        // Calcular threshold final: prioridade para seconds; senão usa minutes; fallback para env em segundos
+        const thresholdMs =
+          presence_threshold_seconds !== undefined
+            ? presence_threshold_seconds * 1000
+            : presence_threshold_minutes !== undefined
+            ? presence_threshold_minutes * 60 * 1000
+            : config.rfid.presenceTimeoutSeconds * 1000;
+        const presenceThreshold = new Date(Date.now() - thresholdMs);
 
         // Buscar evidências com paginação
         const [evidences, totalEvidences] = await Promise.all([
@@ -204,6 +211,7 @@ export class SafekeepingService {
               tags: {
                 include: {
                   scans: {
+                    where: { scanner_id: { not: null } },
                     take: 1,
                     orderBy: { created_at: "desc" },
                     include: {
