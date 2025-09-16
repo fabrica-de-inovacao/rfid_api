@@ -14,6 +14,9 @@ import evidenceRoutes, { setEvidenceController } from "./routes/evidenceRoutes";
 import scannerRoutes, { setScannerController } from "./routes/scannerRoutes";
 import safekeepingRoutes from "./routes/safekeepingRoutes";
 import activityRoutes from "./routes/activityRoutes";
+import custodyRealtimeRoutes, {
+  setCustodyRealtimeController,
+} from "./routes/custodyRealtimeRoutes";
 
 // Services
 import { MQTTService } from "./services/mqttService";
@@ -22,6 +25,7 @@ import { WebSocketService } from "./services/websocketService";
 // Controllers
 import { EvidenceController } from "./controllers/evidenceController";
 import { ScannerController } from "./controllers/scannerController";
+import { CustodyRealtimeController } from "./controllers/custodyRealtimeController";
 
 class App {
   private app: express.Application;
@@ -172,10 +176,14 @@ class App {
       this.websocketService
     );
     const scannerController = new ScannerController(this.websocketService);
+    const custodyRealtimeController = new CustodyRealtimeController(
+      this.websocketService
+    );
 
     // Configurar controladores nas rotas
     setEvidenceController(evidenceController);
     setScannerController(scannerController);
+    setCustodyRealtimeController(custodyRealtimeController);
   }
 
   private initializeRoutes(): void {
@@ -266,6 +274,7 @@ class App {
     this.app.use("/api/v1/scans", scannerRoutes);
     this.app.use("/api/v1/safekeepings", safekeepingRoutes);
     this.app.use("/api/v1/activities", activityRoutes);
+    this.app.use("/api/v1/custody-realtime", custodyRealtimeRoutes);
 
     // Rota 404 - Página HTML personalizada
     this.app.use("*", (req, res) => {

@@ -1026,4 +1026,124 @@ router.get("/recent", authenticateToken, (req, res) =>
  *             error: "Database connection failed"
  */
 
+// ========== NOVOS ENDPOINTS PARA MONITORAMENTO EM TEMPO REAL ==========
+
+/**
+ * @swagger
+ * /scans/antenna/{antennaIP}/sdcard:
+ *   get:
+ *     tags: [Scanners]
+ *     summary: 📡 Consultar leituras atuais do SD card de uma antena
+ *     description: |
+ *       Consulta diretamente o endpoint `/getTagSDCard` de uma antena específica
+ *       para obter as leituras armazenadas no cartão SD em tempo real.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: antennaIP
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: IP da antena (ex: 192.168.2.100)
+ *         example: "192.168.2.100"
+ *     responses:
+ *       200:
+ *         description: Dados do SD card obtidos com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Dados do SD card obtidos com sucesso"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     antenna_ip:
+ *                       type: string
+ *                       example: "192.168.2.100"
+ *                     antenna_mac:
+ *                       type: string
+ *                       example: "54:43:B2:95:0C:50"
+ *                     antenna_name:
+ *                       type: string
+ *                       example: "AntenaSalaFabTeste"
+ *                     total_readings:
+ *                       type: integer
+ *                       example: 6
+ *                     unique_tags:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["E2801191A50300653CF11502"]
+ *                     readings:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/AntennaReading'
+ *                     status:
+ *                       type: string
+ *                       enum: [online, offline]
+ *                       example: "online"
+ *       400:
+ *         description: IP da antena não fornecido
+ *       500:
+ *         description: Erro ao consultar antena (offline, timeout, etc.)
+ */
+router.get("/antenna/:antennaIP/sdcard", authenticateToken, (req, res) =>
+  scannerController.getAntennaSDCardData(req, res)
+);
+
+/**
+ * @swagger
+ * /scans/safekeeping/{safekeepingId}/antennas:
+ *   get:
+ *     tags: [Scanners]
+ *     summary: 📡 Consultar todas as antenas de uma custódia
+ *     description: |
+ *       Consulta os dados de SD card de todas as antenas associadas aos scanners
+ *       de uma custódia específica.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: safekeepingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID da custódia
+ *     responses:
+ *       200:
+ *         description: Dados das antenas obtidos com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Dados de 2 antena(s) obtidos com sucesso"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AntennaCurrentStatus'
+ *       400:
+ *         description: ID da custódia não fornecido
+ *       500:
+ *         description: Erro interno do servidor
+ */
+router.get(
+  "/safekeeping/:safekeepingId/antennas",
+  authenticateToken,
+  (req, res) => scannerController.getSafekeepingAntennasData(req, res)
+);
+
 export default router;

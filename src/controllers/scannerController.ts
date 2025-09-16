@@ -368,4 +368,81 @@ export class ScannerController {
       });
     }
   };
+
+  // ========== NOVOS ENDPOINTS PARA MONITORAMENTO EM TEMPO REAL ==========
+
+  /**
+   * Consultar leituras atuais do SD card de uma antena específica
+   */
+  getAntennaSDCardData = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { antennaIP } = req.params;
+
+      if (!antennaIP) {
+        res.status(400).json({
+          success: false,
+          message: "IP da antena é obrigatório",
+        });
+        return;
+      }
+
+      const { AntennaService } = await import("../services/antennaService");
+      const antennaService = new AntennaService();
+
+      const data = await antennaService.getAntennaSDCardData(antennaIP);
+
+      res.status(200).json({
+        success: true,
+        message: "Dados do SD card obtidos com sucesso",
+        data,
+      });
+    } catch (error) {
+      console.error("[getAntennaSDCardData] Erro:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  };
+
+  /**
+   * Consultar dados de todas as antenas de uma custódia
+   */
+  getSafekeepingAntennasData = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { safekeepingId } = req.params;
+
+      if (!safekeepingId) {
+        res.status(400).json({
+          success: false,
+          message: "ID da custódia é obrigatório",
+        });
+        return;
+      }
+
+      const { AntennaService } = await import("../services/antennaService");
+      const antennaService = new AntennaService();
+
+      const data = await antennaService.getSafekeepingAntennasData(
+        safekeepingId
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Dados de ${data.length} antena(s) obtidos com sucesso`,
+        data,
+      });
+    } catch (error) {
+      console.error("[getSafekeepingAntennasData] Erro:", error);
+      res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  };
 }

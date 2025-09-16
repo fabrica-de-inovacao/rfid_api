@@ -85,7 +85,10 @@ export interface WebSocketMessage {
     | "evidence_scan"
     | "tag_read_response"
     | "error"
-    | "connection_established";
+    | "connection_established"
+    | "custody_status_requested"
+    | "custody_alerts"
+    | "custody_monitoring_update";
   data: any;
   timestamp: Date;
 }
@@ -102,4 +105,64 @@ export interface ApiError {
     field: string;
     message: string;
   }>;
+}
+
+export interface AntennaReadingData {
+  reading_reader_ip: string;
+  reading_epc_hex: string;
+  reading_reader_mac: string;
+  reading_company_id: string;
+  reading_antenna: string;
+  reading_movement_type: string;
+  reading_created_at: string;
+  reading_reader_name: string;
+  reading_rpm: string;
+}
+
+export interface AntennaSDCardResponse {
+  message: string;
+  count_files: number;
+  count_readings: number;
+  data: AntennaReadingData[];
+}
+
+export interface AntennaCurrentStatusData {
+  antenna_ip: string;
+  antenna_mac: string;
+  antenna_name: string;
+  total_readings: number;
+  unique_tags: string[];
+  readings: AntennaReadingData[];
+  last_update: string;
+  status: "online" | "offline";
+}
+
+export interface SafekeepingRealtimeStatus {
+  safekeeping_id: string;
+  safekeeping_name: string;
+  scanner: {
+    id: string;
+    name: string;
+    mac_address: string;
+    antenna_ip?: string;
+    status: string;
+    last_scan?: Date;
+  };
+  evidences: {
+    id: string;
+    name: string;
+    tag_id: string | null;
+    expected_present: boolean;
+    currently_present: boolean;
+    last_seen_at: Date | null;
+    status_changed_at: Date;
+  }[];
+  summary: {
+    total_evidences: number;
+    expected_present: number;
+    currently_present: number;
+    missing: number;
+    unexpected: number;
+  };
+  last_updated: Date;
 }
