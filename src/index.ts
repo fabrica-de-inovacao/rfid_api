@@ -21,6 +21,7 @@ import custodyRealtimeRoutes, {
 // Services
 import { MQTTService } from "./services/mqttService";
 import { WebSocketService } from "./services/websocketService";
+import { PresenceMonitorService } from "./services/presenceMonitorService";
 
 // Controllers
 import { EvidenceController } from "./controllers/evidenceController";
@@ -31,6 +32,7 @@ class App {
   private app: express.Application;
   private mqttService!: MQTTService;
   private websocketService!: WebSocketService;
+  private presenceMonitorService!: PresenceMonitorService;
 
   constructor() {
     this.app = express();
@@ -45,8 +47,14 @@ class App {
     // Inicializar serviços
     this.websocketService = new WebSocketService();
     this.mqttService = new MQTTService(this.websocketService);
+    this.presenceMonitorService = new PresenceMonitorService(
+      this.websocketService
+    );
 
-    console.log("Serviços MQTT e WebSocket inicializados");
+    // Iniciar monitoramento de presença
+    this.presenceMonitorService.startMonitoring();
+
+    console.log("Serviços MQTT, WebSocket e PresenceMonitor inicializados");
   }
 
   private initializeMiddlewares(): void {

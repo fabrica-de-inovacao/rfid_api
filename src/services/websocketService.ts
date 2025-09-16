@@ -10,6 +10,11 @@ export class WebSocketService {
     this.wss = new WebSocket.Server({
       port: Number(config.websocket.port),
       host: "0.0.0.0",
+      verifyClient: (info: any) => {
+        // Permitir todas as origens durante desenvolvimento
+        console.log("WebSocket connection from origin:", info.origin);
+        return true;
+      },
     });
 
     this.setupWebSocketServer();
@@ -109,6 +114,16 @@ export class WebSocketService {
         error,
         details,
       },
+      timestamp: new Date(),
+    };
+
+    this.broadcast(message);
+  }
+
+  public notifyEvidenceAbsence(absenceData: any) {
+    const message: WebSocketMessage = {
+      type: "evidence_absence_alert",
+      data: absenceData,
       timestamp: new Date(),
     };
 

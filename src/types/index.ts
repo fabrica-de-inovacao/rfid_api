@@ -88,7 +88,8 @@ export interface WebSocketMessage {
     | "connection_established"
     | "custody_status_requested"
     | "custody_alerts"
-    | "custody_monitoring_update";
+    | "custody_monitoring_update"
+    | "evidence_absence_alert";
   data: any;
   timestamp: Date;
 }

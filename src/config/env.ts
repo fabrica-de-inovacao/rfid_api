@@ -29,4 +29,9 @@ export const config = {
   websocket: {
     port: process.env.WS_PORT || 3001,
   },
+
+  rfid: {
+    // Tempo em segundos para considerar uma tag ausente se não for detectada
+    presenceTimeoutSeconds: Number(process.env.RFID_PRESENCE_TIMEOUT) || 30,
+  },
 };
