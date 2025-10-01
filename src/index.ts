@@ -100,26 +100,57 @@ class App {
       })
     );
 
-    // CORS configurado para aceitar qualquer origem durante testes
-    // TODO: Restringir origins em produção final
+    // CORS configurado para aceitar qualquer origem
+    // Permite acesso de todas as origens para máxima compatibilidade
     this.app.use(
       cors({
-        origin: true, // Aceita qualquer origem
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        origin: "*", // Permite explicitamente todas as origens
+        credentials: false, // Desabilitado quando origin é "*"
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
         allowedHeaders: [
           "Content-Type",
           "Authorization",
           "X-Requested-With",
           "X-Forwarded-Proto",
+          "Accept",
+          "Origin",
+          "Access-Control-Request-Method",
+          "Access-Control-Request-Headers",
         ],
-        exposedHeaders: ["X-Total-Count", "X-Page-Count"],
+        exposedHeaders: [
+          "X-Total-Count",
+          "X-Page-Count",
+          "Content-Range",
+          "X-Content-Range",
+        ],
         optionsSuccessStatus: 200, // Para compatibilidade com navegadores mais antigos
+        preflightContinue: false, // Resposta imediata para OPTIONS
       })
     );
 
-    // Middleware para lidar com proxy reverso e HTTPS
+    // Middleware para garantir headers CORS em todas as respostas
     this.app.use((req, res, next) => {
+      // Headers CORS explícitos para garantir compatibilidade total
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"
+      );
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With, X-Forwarded-Proto, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+      );
+      res.header(
+        "Access-Control-Expose-Headers",
+        "X-Total-Count, X-Page-Count, Content-Range, X-Content-Range"
+      );
+
+      // Responder imediatamente para requisições OPTIONS (preflight)
+      if (req.method === "OPTIONS") {
+        res.status(200).end();
+        return;
+      }
+
       // Detectar se a requisição veio através de HTTPS e definir propriedades customizadas
       if (req.headers["x-forwarded-proto"] === "https" || req.secure) {
         (req as any).isHttps = true;
