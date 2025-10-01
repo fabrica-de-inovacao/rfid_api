@@ -61,7 +61,7 @@ class App {
     // Trust proxy para funcionar atrás de reverse proxy (Nginx/Apache)
     this.app.set("trust proxy", true);
 
-    // Middlewares de segurança (configurado para HTTPS e HTTP)
+    // Middlewares de segurança (configurado para HTTP e HTTPS)
     this.app.use(
       helmet({
         contentSecurityPolicy: {
@@ -92,11 +92,10 @@ class App {
           },
         },
         crossOriginEmbedderPolicy: false, // Desabilitar para compatibilidade
-        hsts: {
-          maxAge: 31536000,
-          includeSubDomains: true,
-          preload: true,
-        },
+        crossOriginOpenerPolicy: false, // Desabilitar para evitar problemas com HTTP
+        crossOriginResourcePolicy: false, // Desabilitar para compatibilidade
+        hsts: false, // Desabilitar HSTS para HTTP
+        originAgentCluster: false, // Desabilitar para evitar conflitos
       })
     );
 
@@ -144,6 +143,12 @@ class App {
         "Access-Control-Expose-Headers",
         "X-Total-Count, X-Page-Count, Content-Range, X-Content-Range"
       );
+
+      // Remover headers que causam problemas com HTTP
+      res.removeHeader("Cross-Origin-Opener-Policy");
+      res.removeHeader("Cross-Origin-Embedder-Policy");
+      res.removeHeader("Cross-Origin-Resource-Policy");
+      res.removeHeader("Origin-Agent-Cluster");
 
       // Responder imediatamente para requisições OPTIONS (preflight)
       if (req.method === "OPTIONS") {
@@ -315,23 +320,28 @@ class App {
         headers: req.headers,
         cors_headers_sent: {
           "Access-Control-Allow-Origin": res.get("Access-Control-Allow-Origin"),
-          "Access-Control-Allow-Methods": res.get("Access-Control-Allow-Methods"),
-          "Access-Control-Allow-Headers": res.get("Access-Control-Allow-Headers"),
-        }
+          "Access-Control-Allow-Methods": res.get(
+            "Access-Control-Allow-Methods"
+          ),
+          "Access-Control-Allow-Headers": res.get(
+            "Access-Control-Allow-Headers"
+          ),
+        },
       };
 
       console.log("🌐 [CORS TEST] Teste de CORS executado:", corsInfo);
 
       res.status(200).json({
         success: true,
-        message: "CORS configurado corretamente - acesso permitido de todas as origens",
+        message:
+          "CORS configurado corretamente - acesso permitido de todas as origens",
         cors_info: corsInfo,
         server_info: {
           status: "ONLINE",
           cors_enabled: true,
           allowed_origins: "Todas (*)",
           allowed_methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
-        }
+        },
       });
     });
 

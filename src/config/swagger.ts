@@ -1284,10 +1284,16 @@ export const setupSwagger = (app: Application): void => {
   (app as any).use(
     "/api/v1/api-docs",
     (req: any, res: any, next: any) => {
-      // Headers para compatibilidade HTTPS/HTTP
+      // Headers para compatibilidade HTTP/HTTPS
       res.setHeader("X-Content-Type-Options", "nosniff");
       res.setHeader("X-Frame-Options", "SAMEORIGIN");
       res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+      
+      // Desabilitar headers que causam problemas com HTTP
+      res.removeHeader("Cross-Origin-Opener-Policy");
+      res.removeHeader("Cross-Origin-Embedder-Policy");
+      res.removeHeader("Cross-Origin-Resource-Policy");
+      res.removeHeader("Origin-Agent-Cluster");
 
       // Headers CORS para Swagger UI - Permissivo para testes
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1300,7 +1306,7 @@ export const setupSwagger = (app: Application): void => {
         "Content-Type, Authorization, X-Requested-With, X-Forwarded-Proto, sec-ch-ua, sec-ch-ua-mobile, sec-ch-ua-platform, User-Agent, Referer"
       );
 
-      // Se for HTTPS, adicionar headers de segurança apropriados
+      // Apenas adicionar HSTS se for HTTPS
       if (req.secure || req.headers["x-forwarded-proto"] === "https") {
         res.setHeader(
           "Strict-Transport-Security",
@@ -1328,9 +1334,15 @@ export const setupSwagger = (app: Application): void => {
     );
     res.setHeader("Cache-Control", "public, max-age=300"); // Cache por 5 minutos
 
-    // Headers de segurança
+    // Headers de segurança básicos
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    
+    // Remover headers que causam problemas com HTTP
+    res.removeHeader("Cross-Origin-Opener-Policy");
+    res.removeHeader("Cross-Origin-Embedder-Policy");
+    res.removeHeader("Cross-Origin-Resource-Policy");
+    res.removeHeader("Origin-Agent-Cluster");
 
     res.json(specs);
   });
