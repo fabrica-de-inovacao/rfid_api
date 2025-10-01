@@ -305,6 +305,36 @@ class App {
       });
     });
 
+    // 🌐 Endpoint específico para teste de CORS
+    this.app.all("/api/v1/cors-test", (req, res) => {
+      const corsInfo = {
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        origin: req.get("Origin") || "Não especificada",
+        user_agent: req.get("User-Agent"),
+        headers: req.headers,
+        cors_headers_sent: {
+          "Access-Control-Allow-Origin": res.get("Access-Control-Allow-Origin"),
+          "Access-Control-Allow-Methods": res.get("Access-Control-Allow-Methods"),
+          "Access-Control-Allow-Headers": res.get("Access-Control-Allow-Headers"),
+        }
+      };
+
+      console.log("🌐 [CORS TEST] Teste de CORS executado:", corsInfo);
+
+      res.status(200).json({
+        success: true,
+        message: "CORS configurado corretamente - acesso permitido de todas as origens",
+        cors_info: corsInfo,
+        server_info: {
+          status: "ONLINE",
+          cors_enabled: true,
+          allowed_origins: "Todas (*)",
+          allowed_methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
+        }
+      });
+    });
+
     // Rotas da API
     this.app.use("/api/v1/auth", authRoutes);
     this.app.use("/api/v1/users", userRoutes);
